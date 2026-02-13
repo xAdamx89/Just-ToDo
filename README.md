@@ -1,0 +1,1 @@
+# Projekt Just ToDo, po prostu to zrób
