@@ -1,0 +1,61 @@
+services:
+  web:
+    build:
+      context: ./backend/app
+      dockerfile: Dockerfile
+    container_name: Just_ToDo_Django
+    command: /app/entrypoint.sh
+    volumes:
+      - ./backend/app:/app
+    working_dir: /app
+    env_file:
+      - ./backend/app/.env
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "8000:8000"
+    networks:
+      - todonet
+    restart: unless-stopped
+
+  redis:
+    image: redis:7
+    container_name: redis_cache
+    ports:
+      - "6379:6379"
+    networks:
+      - todonet
+
+  db:
+    image: postgres:16
+    container_name: postgres_db
+    volumes:
+      - ./backend/postgres_data:/var/lib/postgresql/data/
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: 9089
+      POSTGRES_DB: ToDoDjango
+    ports:
+      - "5432:5432"
+    networks:
+      - todonet
+
+  nginx:
+    image: nginx:stable
+    container_name: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./backend/nginx/conf.d:/etc/nginx/conf.d
+      - ./backend/app/static:/static
+      - ./backend/app/media:/media
+    depends_on:
+      - web
+    networks:
+      - todonet
+    restart: unless-stopped
+
+networks:
+  todonet:
+    driver: bridge
