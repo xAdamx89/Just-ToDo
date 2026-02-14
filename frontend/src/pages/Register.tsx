@@ -1,17 +1,23 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Mail, Lock, ArrowLeft } from "lucide-react";
+import { Mail, Lock, User, ArrowLeft } from "lucide-react";
 
-function Login() {
+function Register() {
   const navigate = useNavigate();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Tutaj będzie logika logowania
-    console.log("Login:", { email, password });
+    if (password !== confirmPassword) {
+      alert("Hasła nie są identyczne!");
+      return;
+    }
+    // Tutaj będzie logika rejestracji
+    console.log("Register:", { name, email, password });
   };
 
   return (
@@ -32,16 +38,34 @@ function Login() {
           Powrót do strony głównej
         </motion.button>
 
-        {/* Login Card */}
+        {/* Register Card */}
         <div className="bg-gradient-to-br from-amber-900/40 to-orange-900/40 backdrop-blur-md p-8 rounded-3xl border border-amber-700/30 shadow-2xl">
           <h2 className="text-3xl font-bold text-amber-100 mb-2 text-center">
-            Witaj ponownie!
+            Dołącz do nas!
           </h2>
           <p className="text-amber-200/70 text-center mb-8">
-            Zaloguj się do swojego konta
+            Stwórz swoje konto już teraz
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Name Input */}
+            <div>
+              <label className="block text-amber-100 text-sm font-medium mb-2">
+                Imię
+              </label>
+              <div className="relative">
+                <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-amber-400" />
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 bg-amber-950/50 border border-amber-700/50 rounded-xl text-amber-100 placeholder-amber-400/50 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
+                  placeholder="Jan Kowalski"
+                  required
+                />
+              </div>
+            </div>
+
             {/* Email Input */}
             <div>
               <label className="block text-amber-100 text-sm font-medium mb-2">
@@ -74,6 +98,26 @@ function Login() {
                   className="w-full pl-12 pr-4 py-3 bg-amber-950/50 border border-amber-700/50 rounded-xl text-amber-100 placeholder-amber-400/50 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
                   placeholder="••••••••"
                   required
+                  minLength={6}
+                />
+              </div>
+            </div>
+
+            {/* Confirm Password Input */}
+            <div>
+              <label className="block text-amber-100 text-sm font-medium mb-2">
+                Potwierdź hasło
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-amber-400" />
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 bg-amber-950/50 border border-amber-700/50 rounded-xl text-amber-100 placeholder-amber-400/50 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
+                  placeholder="••••••••"
+                  required
+                  minLength={6}
                 />
               </div>
             </div>
@@ -85,19 +129,19 @@ function Login() {
               type="submit"
               className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
             >
-              Zaloguj się
+              Zarejestruj się
             </motion.button>
           </form>
 
-          {/* Register Link */}
+          {/* Login Link */}
           <div className="mt-6 text-center">
             <p className="text-amber-200/70 text-sm">
-              Nie masz konta?{" "}
+              Masz już konto?{" "}
               <button
-                onClick={() => navigate("/register")}
+                onClick={() => navigate("/login")}
                 className="text-amber-300 hover:text-amber-200 font-semibold underline"
               >
-                Zarejestruj się
+                Zaloguj się
               </button>
             </p>
           </div>
@@ -107,4 +151,4 @@ function Login() {
   );
 }
 
-export default Login;
+export default Register;
