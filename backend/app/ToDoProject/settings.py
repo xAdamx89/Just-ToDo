@@ -1,3 +1,4 @@
+import os
 """
 Django settings for ToDoProject project.
 
@@ -25,7 +26,7 @@ SECRET_KEY = 'django-insecure-w4ez(qh%+ca_y2l*!h5&ep6=mnpu+4_cx^e5$v5-%t%00w(m47
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']  # Allow all hosts for dev
 
 
 # Application definition
@@ -129,4 +130,5 @@ STATICFILES_DIRS = [
 # Media files (user-uploaded)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+FORCE_SCRIPT_NAME = os.environ.get('FORCE_SCRIPT_NAME', None)
 

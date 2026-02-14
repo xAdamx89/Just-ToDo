@@ -41,6 +41,22 @@ services:
     networks:
       - todonet
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: todo_frontend
+    command: npm run dev -- --host 0.0.0.0
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - ./frontend/dist:/app/dist
+    ports:
+      - "5173:5173"
+    networks:
+      - todonet
+    restart: unless-stopped
+
   nginx:
     image: nginx:stable
     container_name: nginx
@@ -50,8 +66,10 @@ services:
       - ./backend/nginx/conf.d:/etc/nginx/conf.d
       - ./backend/app/static:/static
       - ./backend/app/media:/media
+      - ./frontend/dist:/usr/share/nginx/html
     depends_on:
       - web
+      - frontend
     networks:
       - todonet
     restart: unless-stopped
@@ -59,3 +77,4 @@ services:
 networks:
   todonet:
     driver: bridge
+
