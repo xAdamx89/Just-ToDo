@@ -50,9 +50,9 @@ function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-950 via-orange-900 to-red-950 text-white overflow-hidden">
+    <div className="min-h-[100dvh] bg-gradient-to-br from-amber-950 via-orange-900 to-red-950 text-white overflow-auto">
       {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <motion.div
           animate={{
             scale: [1, 1.2, 1],
@@ -79,7 +79,7 @@ function Home() {
         />
       </div>
 
-      <div className="relative z-10 container mx-auto px-4 py-16 md:py-20">
+      <div className="relative z-10 container mx-auto px-4 py-12 md:py-20">
         {/* Hero Section */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -121,7 +121,7 @@ function Home() {
             transition={{ delay: 0.4, duration: 0.8 }}
             className="text-xl md:text-2xl mb-4 text-amber-100/90 font-light"
           >
-            Twój Organizer Zadań
+            Twój Inteligentny Organizer Zadań
           </motion.p>
 
           <motion.p
@@ -240,7 +240,7 @@ function Home() {
           transition={{ delay: 1.5, duration: 0.8 }}
           className="text-center mt-16 text-amber-300/50 text-sm"
         >
-          <p>&copy; 2024 Just ToDo. Wszystkie prawa zastrzeżone.</p>
+          <p>&copy; 2026 Just ToDo. Wszystkie prawa zastrzeżone.</p>
         </motion.div>
       </div>
     </div>

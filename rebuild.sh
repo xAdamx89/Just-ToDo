@@ -17,7 +17,7 @@ sudo docker-compose up -d
 
 echo "Stack uruchomiony w tle. Sprawdź logi poleceniem 'docker-compose logs -f'"
 
-if [ $1 == "migrate" ]; then
+if [ $1 = "migrate" ]; then
     echo "Wykonywanie migracji..."
     sudo docker-compose run --rm web python manage.py migrate
     sudo docker-compose run --rm web python manage.py collectstatic --noinput
