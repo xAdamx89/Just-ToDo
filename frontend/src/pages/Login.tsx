@@ -42,7 +42,7 @@ function Login() {
       localStorage.setItem("refresh_token", data.refresh);
 
       // przekierowanie po zalogowaniu
-      navigate("/dashboard");
+      navigate("/productivedashboard");
 
     } catch (err: any) {
       setError(err.message);

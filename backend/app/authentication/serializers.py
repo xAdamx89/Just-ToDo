@@ -6,18 +6,21 @@ from django.contrib.auth import authenticate
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
+    email = serializers.EmailField(required=False, allow_blank=True)
 
     class Meta:
         model = User
         fields = ('username', 'email', 'password')
 
     def create(self, validated_data):
+        email = validated_data.get('email') or None  # jeśli brak lub pusty string -> None
         user = User.objects.create_user(
             username=validated_data['username'],
-            email=validated_data['email'],
+            email=email,
             password=validated_data['password']
         )
         return user
+
 
 
 class LoginSerializer(serializers.Serializer):
@@ -35,8 +38,17 @@ class LoginSerializer(serializers.Serializer):
 
         refresh = RefreshToken.for_user(user)
 
+        # return {
+        #     'user': user,
+        #     'access': str(refresh.access_token),
+        #     'refresh': str(refresh),
+        # }
         return {
-            'user': user,
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+            },
             'access': str(refresh.access_token),
             'refresh': str(refresh),
         }

@@ -5,19 +5,51 @@ import { Mail, Lock, User, ArrowLeft } from "lucide-react";
 
 function Register() {
   const navigate = useNavigate();
-  const [name, setName] = useState("");
+  const [username, setUserName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (password !== confirmPassword) {
       alert("Hasła nie są identyczne!");
       return;
     }
-    // Tutaj będzie logika rejestracji
-    console.log("Register:", { name, email, password });
+
+    setError(null);
+    setLoading(true);
+
+    try {
+      const response = await fetch("http://localhost/api/api/auth/register/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username,
+          email: email || "", // jeśli brak emaila -> null
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Nie udało się zarejestrować");
+      }
+
+      // Automatycznie przekierowujemy po sukcesie
+      navigate("/login");
+
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -47,20 +79,24 @@ function Register() {
             Stwórz swoje konto już teraz
           </p>
 
+          {error && (
+            <p className="text-red-400 text-sm mb-4 text-center">{error}</p>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Name Input */}
+            {/* Username Input */}
             <div>
               <label className="block text-amber-100 text-sm font-medium mb-2">
-                Imię
+                Nazwa użytkownika
               </label>
               <div className="relative">
                 <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-amber-400" />
                 <input
                   type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  value={username}
+                  onChange={(e) => setUserName(e.target.value)}
                   className="w-full pl-12 pr-4 py-3 bg-amber-950/50 border border-amber-700/50 rounded-xl text-amber-100 placeholder-amber-400/50 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
-                  placeholder="Jan Kowalski"
+                  placeholder="eruddy22"
                   required
                 />
               </div>
@@ -69,7 +105,7 @@ function Register() {
             {/* Email Input */}
             <div>
               <label className="block text-amber-100 text-sm font-medium mb-2">
-                Email
+                Email (opcjonalny)
               </label>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-amber-400" />
@@ -79,7 +115,6 @@ function Register() {
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-12 pr-4 py-3 bg-amber-950/50 border border-amber-700/50 rounded-xl text-amber-100 placeholder-amber-400/50 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
                   placeholder="twoj@email.com"
-                  required
                 />
               </div>
             </div>
@@ -128,8 +163,9 @@ function Register() {
               whileTap={{ scale: 0.98 }}
               type="submit"
               className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
+              disabled={loading}
             >
-              Zarejestruj się
+              {loading ? "Rejestracja..." : "Zarejestruj się"}
             </motion.button>
           </form>
 
