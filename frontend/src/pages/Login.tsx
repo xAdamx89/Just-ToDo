@@ -1,19 +1,57 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Mail, Lock, ArrowLeft } from "lucide-react";
+import { Lock, ArrowLeft, User } from "lucide-react";
 
 function Login() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // ─────────────── hooki ───────────────
+  const [username, setUserName] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  // ─────────────── logika submit ───────────────
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Tutaj będzie logika logowania
-    console.log("Login:", { email, password });
+
+    setError(null);
+    setLoading(true);
+
+    try {
+      const response = await fetch("http://localhost/api/api/auth/login/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: username, // jeśli backend loguje po username
+          password: password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Nieprawidłowe dane logowania");
+      }
+
+      // 🔐 zapisujemy tokeny w localStorage
+      localStorage.setItem("access_token", data.access);
+      localStorage.setItem("refresh_token", data.refresh);
+
+      // przekierowanie po zalogowaniu
+      navigate("/dashboard");
+
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // ─────────────── JSX ───────────────
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-950 via-orange-900 to-red-950 flex items-center justify-center px-4 py-8">
       <motion.div
@@ -42,19 +80,19 @@ function Login() {
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email Input */}
+            {/* User name Input */}
             <div>
               <label className="block text-amber-100 text-sm font-medium mb-2">
-                Email
+                Nazwa użytkownika
               </label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-amber-400" />
+                <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-amber-400" />
                 <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUserName(e.target.value)}
                   className="w-full pl-12 pr-4 py-3 bg-amber-950/50 border border-amber-700/50 rounded-xl text-amber-100 placeholder-amber-400/50 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
-                  placeholder="twoj@email.com"
+                  placeholder="eruddy22"
                   required
                 />
               </div>
@@ -78,14 +116,20 @@ function Login() {
               </div>
             </div>
 
+            {/* Wyświetlenie błędu */}
+            {error && (
+              <p className="text-red-500 text-sm text-center">{error}</p>
+            )}
+
             {/* Submit Button */}
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               type="submit"
-              className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
+              disabled={loading}
+              className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Zaloguj się
+              {loading ? "Logowanie..." : "Zaloguj się"}
             </motion.button>
           </form>
 

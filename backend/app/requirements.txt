@@ -3,3 +3,6 @@ gunicorn
 psycopg2-binary
 redis>=5.0
 django-redis
+djangorestframework
+djangorestframework-simplejwt
+dotenv
