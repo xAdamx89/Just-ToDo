@@ -3,55 +3,111 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Lock, ArrowLeft, User } from "lucide-react";
 
+async function deriveKeyFromPassword(password: string, salt: Uint8Array, iterations: number) {
+  const enc = new TextEncoder();
+
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(password),
+    { name: "PBKDF2" },
+    false,
+    ["deriveKey"]
+  );
+
+  return crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: salt.buffer as ArrayBuffer, // 👈 jawne zawężenie
+      iterations,
+      hash: "SHA-256",
+    },
+    keyMaterial,
+    { name: "AES-GCM", length: 256 },
+    true,
+    ["encrypt", "decrypt"]
+  )
+;}
+
+async function decryptPrivateKey(
+  encryptedPrivateKey: Uint8Array,
+  derivedKey: CryptoKey,
+  iv: Uint8Array
+): Promise<ArrayBuffer> {
+  return crypto.subtle.decrypt(
+    {
+      name: "AES-GCM",
+      iv: toArrayBuffer(iv),
+    },
+    derivedKey,
+    toArrayBuffer(encryptedPrivateKey)
+  );
+}
+
+function toArrayBuffer(view: Uint8Array): ArrayBuffer {
+  const buffer = new ArrayBuffer(view.byteLength);
+  new Uint8Array(buffer).set(view);
+  return buffer;
+}
+
 function Login() {
   const navigate = useNavigate();
 
-  // ─────────────── hooki ───────────────
   const [username, setUserName] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // ─────────────── logika submit ───────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     setError(null);
     setLoading(true);
 
     try {
       const response = await fetch("http://localhost/api/api/auth/login/", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: username, // jeśli backend loguje po username
-          password: password,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
       });
 
       const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || "Nieprawidłowe dane logowania");
 
-      if (!response.ok) {
-        throw new Error(data.detail || "Nieprawidłowe dane logowania");
+      const { kdf_salt, kdf_iterations, public_key, encrypted_private_key, iv } = data.encryption;
+
+      // ───────── Funkcja konwertująca Base64 -> Uint8Array ─────────
+      const base64ToUint8 = (b64: string | null): Uint8Array | null => {
+        if (!b64) return null;
+        return Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+      };
+
+      const salt = base64ToUint8(kdf_salt);
+      const ciphertext = base64ToUint8(encrypted_private_key);
+      const nonce = base64ToUint8(iv);
+
+      let privateKeyBuffer: ArrayBuffer | null = null;
+
+      // ───────── Jeśli mamy zaszyfrowany private key ─────────
+      if (ciphertext && salt && nonce) {
+        const derivedKey = await deriveKeyFromPassword(password, salt, kdf_iterations);
+        privateKeyBuffer = await decryptPrivateKey(ciphertext, derivedKey, nonce);
       }
 
-      // 🔐 zapisujemy tokeny w localStorage
+      // 🔐 Trzymamy privateKeyBuffer w React Context lub w pamięci
+      // ⚠️ NIE zapisujemy go w localStorage
+
+      // ───────── Zapis JWT ─────────
       localStorage.setItem("access_token", data.access);
       localStorage.setItem("refresh_token", data.refresh);
 
-      // przekierowanie po zalogowaniu
+      // ───────── Przekierowanie ─────────
       navigate("/productivedashboard");
-
     } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
-
-  // ─────────────── JSX ───────────────
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-950 via-orange-900 to-red-950 flex items-center justify-center px-4 py-8">
       <motion.div
@@ -62,6 +118,7 @@ function Login() {
       >
         {/* Back Button */}
         <motion.button
+          type="button"
           whileHover={{ x: -5 }}
           onClick={() => navigate("/")}
           className="flex items-center gap-2 text-amber-200 hover:text-amber-100 mb-8 transition-colors"
@@ -80,13 +137,13 @@ function Login() {
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* User name Input */}
+            {/* Username */}
             <div>
               <label className="block text-amber-100 text-sm font-medium mb-2">
                 Nazwa użytkownika
               </label>
               <div className="relative">
-                <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-amber-400" />
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-400" />
                 <input
                   type="text"
                   value={username}
@@ -98,13 +155,13 @@ function Login() {
               </div>
             </div>
 
-            {/* Password Input */}
+            {/* Password */}
             <div>
               <label className="block text-amber-100 text-sm font-medium mb-2">
                 Hasło
               </label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-amber-400" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-400" />
                 <input
                   type="password"
                   value={password}
@@ -116,15 +173,15 @@ function Login() {
               </div>
             </div>
 
-            {/* Wyświetlenie błędu */}
+            {/* Error */}
             {error && (
               <p className="text-red-500 text-sm text-center">{error}</p>
             )}
 
-            {/* Submit Button */}
+            {/* Submit */}
             <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={{ scale: loading ? 1 : 1.02 }}
+              whileTap={{ scale: loading ? 1 : 0.98 }}
               type="submit"
               disabled={loading}
               className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
@@ -133,11 +190,12 @@ function Login() {
             </motion.button>
           </form>
 
-          {/* Register Link */}
+          {/* Register */}
           <div className="mt-6 text-center">
             <p className="text-amber-200/70 text-sm">
               Nie masz konta?{" "}
               <button
+                type="button"
                 onClick={() => navigate("/register")}
                 className="text-amber-300 hover:text-amber-200 font-semibold underline"
               >

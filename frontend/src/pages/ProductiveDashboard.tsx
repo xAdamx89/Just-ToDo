@@ -25,6 +25,13 @@ import { cn } from "../utils/cn";
 // ── Types ──────────────────────────────────────────────
 type Theme = "dark" | "light";
 
+interface EncryptedUserData {
+  tasks: string;    // zaszyfrowany JSON
+  fifo: string;     // zaszyfrowany JSON
+  settings: string; // zaszyfrowany JSON
+  sharedUsers: string; // zaszyfrowany JSON
+}
+
 interface Task {
   id: number;
   title: string;
@@ -199,6 +206,7 @@ export default function Dashboard() {
     return (saved as Theme) || "dark";
   });
   useEffect(() => { localStorage.setItem("justtodo-theme", theme); }, [theme]);
+
   const toggleTheme = () => setTheme((p) => (p === "dark" ? "light" : "dark"));
   const t = useThemeClasses(theme);
   const d = theme === "dark";

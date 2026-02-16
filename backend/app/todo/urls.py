@@ -1,7 +1,7 @@
-from django.urls import path
-from . import views
+from rest_framework.routers import DefaultRouter
+from .views import EncryptedTaskViewSet
 
-urlpatterns = [
-    # Add your todo API endpoints here
-    # Example: path('tasks/', views.task_list, name='task_list'),
-]
+router = DefaultRouter()
+router.register(r"tasks", EncryptedTaskViewSet, basename="tasks")
+
+urlpatterns = router.urls

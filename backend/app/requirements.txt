@@ -6,3 +6,4 @@ django-redis
 djangorestframework
 djangorestframework-simplejwt
 dotenv
+cryptography

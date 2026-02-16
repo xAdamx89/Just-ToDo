@@ -1,0 +1,3 @@
+1. Przy rejestracji nowego użytkownika, w przypadku niepowodzenia rejestracji nie pokazuje dlaczego się nie udało.
+    Dodać obsługę wyświetlania errora dalczego się nie udało.
+2.

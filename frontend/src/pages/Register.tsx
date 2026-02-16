@@ -3,6 +3,70 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Mail, Lock, User, ArrowLeft } from "lucide-react";
 
+async function generateKeyPairAndEncrypt(password: string) {
+  const enc = new TextEncoder();
+
+  // 1️⃣ Salt do KDF
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+
+  // 2️⃣ Wyprowadzenie klucza z hasła (PBKDF2)
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(password),
+    { name: "PBKDF2" },
+    false,
+    ["deriveKey"]
+  );
+
+  const derivedKey = await crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: salt,
+      iterations: 250_000,
+      hash: "SHA-256",
+    },
+    keyMaterial,
+    { name: "AES-GCM", length: 256 },
+    true,
+    ["encrypt", "decrypt"]
+  );
+
+  // 3️⃣ Generacja pary kluczy ECDH (X25519)
+  const keyPair: CryptoKeyPair = await crypto.subtle.generateKey(
+    {
+      name: "ECDH",
+      namedCurve: "P-256",
+    },
+    true, // eksportowalny
+    ["deriveKey", "deriveBits"]
+  );
+
+  // 4️⃣ Eksport public key
+  const publicKey: ArrayBuffer = await crypto.subtle.exportKey("raw", keyPair.publicKey);
+
+  // 5️⃣ Eksport private key i zaszyfrowanie go AES-GCM
+  const privateKey: ArrayBuffer = await crypto.subtle.exportKey("pkcs8", keyPair.privateKey);
+
+
+  const iv = crypto.getRandomValues(new Uint8Array(12)); // AES-GCM nonce
+
+  const encryptedPrivateKey: ArrayBuffer = await crypto.subtle.encrypt(
+    {
+      name: "AES-GCM",
+      iv: iv,
+    },
+    derivedKey,
+    privateKey
+  );
+
+  return {
+    salt,                   // Uint8Array 16b
+    iv,                     // Uint8Array 12b
+    publicKey,              // ArrayBuffer
+    encryptedPrivateKey,    // ArrayBuffer
+  };
+}
+
 function Register() {
   const navigate = useNavigate();
   const [username, setUserName] = useState("");
@@ -24,33 +88,40 @@ function Register() {
     setLoading(true);
 
     try {
+      // 1️⃣ Generujemy klucze i szyfrujemy private key
+      const { salt, iv, publicKey, encryptedPrivateKey } = await generateKeyPairAndEncrypt(password);
+
+      // 2️⃣ Konwertujemy ArrayBuffer -> Base64 lub hex do wysyłki
+      const toBase64 = (buf: ArrayBuffer | Uint8Array) => btoa(String.fromCharCode(...new Uint8Array(buf)));
+
+      const payload = {
+        username,
+        email: email || "",
+        password,
+        public_key: toBase64(publicKey),
+        encrypted_private_key: toBase64(encryptedPrivateKey),
+        salt: toBase64(salt),
+        iv: toBase64(iv),
+      };
+
       const response = await fetch("http://localhost/api/api/auth/register/", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username,
-          email: email || "", // jeśli brak emaila -> null
-          password,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.detail || "Nie udało się zarejestrować");
-      }
+      if (!response.ok) throw new Error(data.detail || "Nie udało się zarejestrować");
 
-      // Automatycznie przekierowujemy po sukcesie
       navigate("/login");
-
     } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-950 via-orange-900 to-red-950 flex items-center justify-center px-4 py-8">
