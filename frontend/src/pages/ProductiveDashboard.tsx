@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CheckCircle2,
@@ -194,11 +195,20 @@ function useThemeClasses(theme: Theme) {
 
 // ── Component ──────────────────────────────────────────
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [activeView, setActiveView] = useState("tasks");
   const [tasks, setTasks] = useState<Task[]>(sampleTasks);
   const [fifoItems, setFifoItems] = useState<FifoItem[]>(sampleFifoItems);
   const [sharedUsers] = useState<SharedUser[]>(sampleSharedUsers);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  const handleLogout = () => {
+    localStorage.clear();
+    sessionStorage.clear();
+
+    // Przekierowanie na stronę główną
+    navigate("/", { replace: true });
+  };
 
   // Theme
   const [theme, setTheme] = useState<Theme>(() => {
@@ -363,7 +373,7 @@ export default function Dashboard() {
 
         {/* logout */}
         <div className={cn("p-4 border-t", t.divider)}>
-          <motion.button whileHover={{ x: 4 }} className={cn("w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all", t.navInactive)}>
+          <motion.button whileHover={{ x: 4 }} onClick={handleLogout} className={cn("w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all", t.navInactive)}>
             <LogOut className="w-5 h-5 flex-shrink-0" />
             <AnimatePresence>
               {sidebarOpen && (
