@@ -22,16 +22,10 @@ import {
   Moon,
 } from "lucide-react";
 import { cn } from "../utils/cn";
+import { useMemo } from "react";
 
 // ── Types ──────────────────────────────────────────────
 type Theme = "dark" | "light";
-
-interface EncryptedUserData {
-  tasks: string;    // zaszyfrowany JSON
-  fifo: string;     // zaszyfrowany JSON
-  settings: string; // zaszyfrowany JSON
-  sharedUsers: string; // zaszyfrowany JSON
-}
 
 interface Task {
   id: number;
@@ -43,6 +37,8 @@ interface Task {
   deadline: string | null;
   created_at: string;
 }
+
+type TaskFilter = "all" | "pending" | "completed" | "important";
 
 interface FifoItem {
   id: number;
@@ -57,14 +53,14 @@ interface SharedUser {
   shared_lists: string[];
 }
 
-// ── Sample data ────────────────────────────────────────
-const sampleTasks: Task[] = [
-  { id: 1, title: "Przygotować prezentację", description: "PowerPoint dla klienta", priority: "high", status: "in_progress", is_important: true, deadline: "2024-02-20", created_at: "2024-02-15" },
-  { id: 2, title: "Napisać raport miesięczny", description: "", priority: "medium", status: "pending", is_important: false, deadline: "2024-02-25", created_at: "2024-02-16" },
-  { id: 3, title: "Zadzwonić do kontrahenta", description: "Omówić warunki umowy", priority: "high", status: "pending", is_important: true, deadline: "2024-02-18", created_at: "2024-02-17" },
-  { id: 4, title: "Zaktualizować dokumentację", description: "", priority: "low", status: "completed", is_important: false, deadline: null, created_at: "2024-02-10" },
-  { id: 5, title: "Spotkanie zespołu", description: "Cotygodniowy stand-up", priority: "medium", status: "pending", is_important: false, deadline: "2024-02-19", created_at: "2024-02-17" },
-];
+// // ── Sample data ────────────────────────────────────────
+// const sampleTasks: Task[] = [
+//   { id: 1, title: "Przygotować prezentację", description: "PowerPoint dla klienta", priority: "high", status: "in_progress", is_important: true, deadline: "2024-02-20", created_at: "2024-02-15" },
+//   { id: 2, title: "Napisać raport miesięczny", description: "", priority: "medium", status: "pending", is_important: false, deadline: "2024-02-25", created_at: "2024-02-16" },
+//   { id: 3, title: "Zadzwonić do kontrahenta", description: "Omówić warunki umowy", priority: "high", status: "pending", is_important: true, deadline: "2024-02-18", created_at: "2024-02-17" },
+//   { id: 4, title: "Zaktualizować dokumentację", description: "", priority: "low", status: "completed", is_important: false, deadline: null, created_at: "2024-02-10" },
+//   { id: 5, title: "Spotkanie zespołu", description: "Cotygodniowy stand-up", priority: "medium", status: "pending", is_important: false, deadline: "2024-02-19", created_at: "2024-02-17" },
+// ];
 
 const sampleFifoItems: FifoItem[] = [
   { id: 1, title: "Naprawić bug w logowaniu", created_at: "2024-02-15" },
@@ -193,14 +189,69 @@ function useThemeClasses(theme: Theme) {
   };
 }
 
+function getToken() {
+  return localStorage.getItem("access_token") || "";
+}
+
+async function refreshAccessToken() {
+  const refresh = localStorage.getItem("refresh_token");
+  if (!refresh) return false;
+
+  const res = await fetch("/api/token/refresh/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refresh }),
+  });
+
+  if (!res.ok) return false;
+
+  const data = await res.json();
+  localStorage.setItem("access_token", data.access);
+  return true;
+}
+
+// function getAuthHeader() {
+//   const token = localStorage.getItem("access_token");
+//   return token ? { Authorization: `Bearer ${token}` } : {};
+// }
+
+// export async function fetchEncryptedObjects(
+//   objectType: "tasks" | "fifo" | "settings"
+// ) {
+//   const authHeader = getAuthHeader();
+//   const response = await fetch(
+//     `${API_BASE}/objects/?type=${objectType}`,
+//     {
+//       method: "GET",
+//       headers: {
+//         "Content-Type": "application/json",
+//         ...getAuthHeader()
+//       },
+//     }
+//   );
+
+//   if (!response.ok) {
+//     const text = await response.text();
+//     throw new Error(`Fetch error: ${response.status} ${text}`);
+//   }
+
+//   return await response.json(); // zwraca tablicę
+// }
+
 // ── Component ──────────────────────────────────────────
 export default function Dashboard() {
   const navigate = useNavigate();
   const [activeView, setActiveView] = useState("tasks");
-  const [tasks, setTasks] = useState<Task[]>(sampleTasks);
+  // const [tasks, setTasks] = useState<Task[]>(sampleTasks);
   const [fifoItems, setFifoItems] = useState<FifoItem[]>(sampleFifoItems);
   const [sharedUsers] = useState<SharedUser[]>(sampleSharedUsers);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [taskFilter, setTaskFilter] = useState<TaskFilter>("all");
+  const [taskSearch, setTaskSearch] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const API_URL = "/api/api/tasks/";
 
   const handleLogout = () => {
     localStorage.clear();
@@ -209,6 +260,159 @@ export default function Dashboard() {
     // Przekierowanie na stronę główną
     navigate("/", { replace: true });
   };
+
+    // =========================
+  // ADD TASK
+  // =========================
+  const addTask = async (taskData: Omit<Task, "id" | "created_at">) => {
+    try {
+      let res = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getToken()}`,
+        },
+        body: JSON.stringify(taskData),
+      });
+
+      if (!res.ok) throw new Error("Błąd dodawania taska");
+
+      await fetchTasks();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // =========================
+  // UPDATE TASK
+  // =========================
+  const updateTask = async (id: number, updates: Partial<Task>) => {
+    try {
+      const res = await fetch(`${API_URL}?id=${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getToken()}`,
+        },
+        body: JSON.stringify(updates),
+      });
+
+      if (!res.ok) throw new Error("Błąd aktualizacji taska");
+
+      await fetchTasks();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // =========================
+  // DELETE TASK
+  // =========================
+  const deleteTask = async (id: number) => {
+    try {
+      const res = await fetch(`${API_URL}?id=${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${getToken()}`,
+        },
+      });
+
+      if (!res.ok) throw new Error("Błąd usuwania taska");
+
+      await fetchTasks();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // =========================
+  // FETCH TASKS
+  // =========================
+  const fetchTasks = async (filter: TaskFilter = taskFilter) => {
+    setLoading(true);
+
+    let url = API_URL;
+
+    if (filter === "pending") url += "?status=pending";
+    if (filter === "completed") url += "?status=completed";
+    if (filter === "important") url += "?important=true";
+
+    try {
+      const res = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${getToken()}`,
+        },
+      });
+
+      if (!res.ok) throw new Error("Błąd pobierania tasków");
+
+      const data = await res.json();
+      setTasks(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+    // =========================
+  // TOGGLE COMPLETE
+  // =========================
+  const toggleComplete = async (task: Task) => {
+    const newStatus =
+      task.status === "completed" ? "pending" : "completed";
+
+    await updateTask(task.id, { status: newStatus });
+  };
+
+  // =========================
+  // TOGGLE IMPORTANT
+  // =========================
+  const toggleImportant = async (task: Task) => {
+    await updateTask(task.id, {
+      is_important: !task.is_important,
+    });
+  };
+
+    // =========================
+  // FILTER + SEARCH (frontend)
+  // =========================
+  const filteredTasks = useMemo(() => {
+    let result = tasks;
+
+    if (taskSearch.trim() !== "") {
+      const query = taskSearch.toLowerCase();
+      result = result.filter(
+        (t) =>
+          t.title.toLowerCase().includes(query) ||
+          t.description?.toLowerCase().includes(query)
+      );
+    }
+
+    return result;
+  }, [tasks, taskSearch]);
+
+  // =========================
+  // STATS (liczone w React)
+  // =========================
+  const stats = useMemo(() => {
+    return {
+      total: tasks.length,
+      pending: tasks.filter((t) => t.status === "pending").length,
+      completed: tasks.filter((t) => t.status === "completed").length,
+      important: tasks.filter((t) => t.is_important).length,
+    };
+  }, [tasks]);
+
+    // AUTO LOAD
+  // =========================
+  useEffect(() => {
+    if (getToken()) fetchTasks();
+  }, [getToken()]);
+
+  useEffect(() => {
+    fetchTasks(taskFilter);
+  }, [taskFilter]);
 
   // Theme
   const [theme, setTheme] = useState<Theme>(() => {
@@ -221,42 +425,6 @@ export default function Dashboard() {
   const t = useThemeClasses(theme);
   const d = theme === "dark";
 
-  // Task form
-  const [showTaskForm, setShowTaskForm] = useState(false);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [newTitle, setNewTitle] = useState("");
-  const [newDesc, setNewDesc] = useState("");
-  const [newPriority, setNewPriority] = useState<Task["priority"]>("medium");
-  const [newDeadline, setNewDeadline] = useState("");
-
-  // FIFO form
-  const [newFifo, setNewFifo] = useState("");
-
-  // Filters
-  const [taskFilter, setTaskFilter] = useState<"all" | "pending" | "completed" | "important">("all");
-  const [taskSearch, setTaskSearch] = useState("");
-
-  // ── Task handlers ─────────────────────────────────────
-  const resetForm = () => { setNewTitle(""); setNewDesc(""); setNewPriority("medium"); setNewDeadline(""); setEditingTask(null); setShowTaskForm(false); };
-
-  const addTask = () => {
-    if (!newTitle.trim()) return;
-    setTasks((prev) => [
-      { id: Date.now(), title: newTitle, description: newDesc, priority: newPriority, status: "pending", is_important: false, deadline: newDeadline || null, created_at: new Date().toISOString().split("T")[0] },
-      ...prev,
-    ]);
-    resetForm();
-  };
-
-  const updateTask = () => {
-    if (!editingTask || !newTitle.trim()) return;
-    setTasks((prev) => prev.map((tk) => (tk.id === editingTask.id ? { ...tk, title: newTitle, description: newDesc, priority: newPriority, deadline: newDeadline || null } : tk)));
-    resetForm();
-  };
-
-  const deleteTask = (id: number) => setTasks((prev) => prev.filter((tk) => tk.id !== id));
-  const toggleComplete = (id: number) => setTasks((prev) => prev.map((tk) => (tk.id === id ? { ...tk, status: tk.status === "completed" ? "pending" : "completed" } : tk)));
-  const toggleImportant = (id: number) => setTasks((prev) => prev.map((tk) => (tk.id === id ? { ...tk, is_important: !tk.is_important } : tk)));
 
   // ── FIFO handlers (First In First Out) ─────────────────
   const addFifoItem = () => {
@@ -268,27 +436,20 @@ export default function Dashboard() {
   const dequeueFifoItem = () => setFifoItems((prev) => prev.slice(1)); // dequeue from front
   const deleteFifoItem = (id: number) => setFifoItems((prev) => prev.filter((i) => i.id !== id));
 
-  // ── Filtered + sorted tasks ───────────────────────────
-  const filteredTasks = tasks
-    .filter((tk) => {
-      if (taskFilter === "pending" && tk.status === "completed") return false;
-      if (taskFilter === "completed" && tk.status !== "completed") return false;
-      if (taskFilter === "important" && !tk.is_important) return false;
-      if (taskSearch && !tk.title.toLowerCase().includes(taskSearch.toLowerCase())) return false;
-      return true;
-    })
-    .sort((a, b) => {
-      if (a.is_important !== b.is_important) return a.is_important ? -1 : 1;
-      if ((a.status === "completed") !== (b.status === "completed")) return a.status === "completed" ? 1 : -1;
-      return 0;
-    });
 
-  const stats = {
-    total: tasks.length,
-    completed: tasks.filter((tk) => tk.status === "completed").length,
-    pending: tasks.filter((tk) => tk.status !== "completed").length,
-    important: tasks.filter((tk) => tk.is_important).length,
-  };
+  // FIFO form
+  const [newFifo, setNewFifo] = useState("");
+
+  // Task form
+  const [showTaskForm, setShowTaskForm] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [newTitle, setNewTitle] = useState("");
+  const [newDesc, setNewDesc] = useState("");
+  const [newPriority, setNewPriority] = useState<Task["priority"]>("medium");
+  const [newDeadline, setNewDeadline] = useState("");
+
+  // ── Task handlers ─────────────────────────────────────
+  const resetForm = () => { setNewTitle(""); setNewDesc(""); setNewPriority("medium"); setNewDeadline(""); setEditingTask(null); setShowTaskForm(false); };
 
   // ── Render ────────────────────────────────────────────
   return (
@@ -451,7 +612,7 @@ export default function Dashboard() {
                     <motion.div key={task.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -100 }} transition={{ delay: i * 0.04 }} className={cn("p-4 rounded-2xl border group transition-all", t.cardBg, t.cardHover, task.is_important && t.taskImportantRing, task.status === "completed" && t.taskCompleted)}>
                       <div className="flex items-start gap-4">
                         {/* checkbox */}
-                        <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }} onClick={() => toggleComplete(task.id)} className={cn("w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all", task.status === "completed" ? "bg-emerald-500 border-emerald-500" : t.checkboxIdle)}>
+                        <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }} onClick={() => toggleComplete(task)} className={cn("w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all", task.status === "completed" ? "bg-emerald-500 border-emerald-500" : t.checkboxIdle)}>
                           {task.status === "completed" && <CheckCircle2 className="w-4 h-4 text-white" />}
                         </motion.button>
 
@@ -476,7 +637,7 @@ export default function Dashboard() {
 
                         {/* actions */}
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => toggleImportant(task.id)} className={cn("p-2 transition-colors", t.textSecondary, "hover:text-amber-400")}>
+                          <button onClick={() => toggleImportant(task)} className={cn("p-2 transition-colors", t.textSecondary, "hover:text-amber-400")}>
                             <Star className={cn("w-4 h-4", task.is_important && "fill-amber-400 text-amber-400")} />
                           </button>
                           <button onClick={() => { setEditingTask(task); setNewTitle(task.title); setNewDesc(task.description); setNewPriority(task.priority); setNewDeadline(task.deadline || ""); setShowTaskForm(true); }} className={cn("p-2 transition-colors", t.textSecondary, "hover:text-blue-400")}>
@@ -714,7 +875,14 @@ export default function Dashboard() {
 
               <div className="flex gap-3 mt-6">
                 <button onClick={() => setShowTaskForm(false)} className={cn("flex-1 px-4 py-3 rounded-xl font-medium transition-all", t.btnSecondary)}>Anuluj</button>
-                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={editingTask ? updateTask : addTask} className={cn("flex-1 px-4 py-3 rounded-xl font-medium transition-all", t.btnPrimary)}>
+                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => {
+                  if (editingTask) {
+                    updateTask(editingTask.id, { title: newTitle, description: newDesc, priority: newPriority, deadline: newDeadline || null });
+                  } else {
+                    addTask({ title: newTitle, description: newDesc, priority: newPriority, status: "pending", is_important: false, deadline: newDeadline || null });
+                  }
+                  resetForm();
+                }} className={cn("flex-1 px-4 py-3 rounded-xl font-medium transition-all", t.btnPrimary)}>
                   {editingTask ? "Zapisz" : "Dodaj"}
                 </motion.button>
               </div>

@@ -104,7 +104,7 @@ function Register() {
         iv: toBase64(iv),
       };
 
-      const response = await fetch("http://localhost/api/api/auth/register/", {
+      const response = await fetch("http://localhost/api/api/register/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

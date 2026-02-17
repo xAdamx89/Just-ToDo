@@ -26,6 +26,13 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.asymmetric import x25519
 from cryptography.hazmat.primitives.serialization import Encoding, PrivateFormat, PublicFormat, NoEncryption
+from django.db.models import Q
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from rest_framework import status
+from .models import Task
+from .serializers import TaskSerializer
 
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
@@ -129,31 +136,175 @@ class MeView(APIView):
             "email": request.user.email
         })
 
-class UserDataView(APIView):
+import base64
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
+from .models import EncryptedObject
+
+
+class EncryptedObjectView(APIView):
     permission_classes = [IsAuthenticated]
+
+    def get(self, request, object_type):
+        """
+        Zwraca wszystkie zaszyfrowane obiekty danego typu
+        """
+        objects = EncryptedObject.objects.filter(
+            user=request.user,
+            object_type=object_type
+        )
+
+        return Response([
+            {
+                "id": obj.id,
+                "ciphertext": base64.b64encode(obj.ciphertext).decode(),
+                "created_at": obj.created_at,
+                "updated_at": obj.updated_at
+            }
+            for obj in objects
+        ])
+
+    def post(self, request, object_type):
+        """
+        Tworzy nowy zaszyfrowany obiekt
+        """
+        ciphertext_b64 = request.data.get("ciphertext")
+        if not ciphertext_b64:
+            return Response({"error": "ciphertext required"}, status=400)
+
+        ciphertext = base64.b64decode(ciphertext_b64)
+
+        obj = EncryptedObject.objects.create(
+            user=request.user,
+            object_type=object_type,
+            ciphertext=ciphertext
+        )
+
+        return Response({"id": obj.id}, status=status.HTTP_201_CREATED)
+
+    def put(self, request, object_type):
+        """
+        Aktualizuje istniejący obiekt
+        """
+        obj_id = request.data.get("id")
+        ciphertext_b64 = request.data.get("ciphertext")
+
+        if not obj_id or not ciphertext_b64:
+            return Response({"error": "id and ciphertext required"}, status=400)
+
+        try:
+            obj = EncryptedObject.objects.get(
+                id=obj_id,
+                user=request.user,
+                object_type=object_type
+            )
+        except EncryptedObject.DoesNotExist:
+            return Response({"error": "not found"}, status=404)
+
+        obj.ciphertext = base64.b64decode(ciphertext_b64)
+        obj.save()
+
+        return Response({"status": "updated"}, status=200)
+
+    def delete(self, request, object_type):
+        """
+        Usuwa obiekt
+        """
+        obj_id = request.data.get("id")
+
+        try:
+            obj = EncryptedObject.objects.get(
+                id=obj_id,
+                user=request.user,
+                object_type=object_type
+            )
+        except EncryptedObject.DoesNotExist:
+            return Response({"error": "not found"}, status=404)
+
+        obj.delete()
+        return Response({"status": "deleted"}, status=200)
+
+class TaskView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    # =========================
+    # GET - lista + filtrowanie
+    # =========================
     def get(self, request):
-        """Zwraca zaszyfrowane dane użytkownika"""
-        try:
-            userdata = request.user.userdata
-        except UserData.DoesNotExist:
-            # jeśli nie ma danych, tworzymy pusty rekord
-            userdata = UserData.objects.create(user=request.user)
-        return Response({
-            "tasks": userdata.encrypted_tasks,
-            "fifo": userdata.encrypted_fifo,
-            "settings": userdata.encrypted_settings,
-        })
+        tasks = Task.objects.filter(user=request.user)
+
+        # --- filtrowanie po statusie ---
+        status_param = request.query_params.get("status")
+        if status_param:
+            tasks = tasks.filter(status=status_param)
+
+        # --- filtrowanie po ważnych ---
+        important_param = request.query_params.get("important")
+        if important_param == "true":
+            tasks = tasks.filter(is_important=True)
+
+        # --- wyszukiwanie ---
+        search_param = request.query_params.get("search")
+        if search_param:
+            tasks = tasks.filter(
+                Q(title__icontains=search_param) |
+                Q(description__icontains=search_param)
+            )
+
+        tasks = tasks.order_by("-created_at")
+
+        serializer = TaskSerializer(tasks, many=True)
+        return Response(serializer.data)
+
+    # =========================
+    # POST - dodanie
+    # =========================
     def post(self, request):
-        """Aktualizuje zaszyfrowane dane użytkownika"""
+        serializer = TaskSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    # =========================
+    # PUT - edycja / toggle
+    # =========================
+    def put(self, request):
+        task_id = request.query_params.get("id")
+
+        if not task_id:
+            return Response({"error": "Task id required"}, status=400)
+
         try:
-            userdata = request.user.userdata
-        except UserData.DoesNotExist:
-            userdata = UserData.objects.create(user=request.user)
-        # spodziewamy się, że klient wysyła już zaszyfrowane JSONy
-        userdata.encrypted_tasks = request.data.get("tasks", userdata.encrypted_tasks)
-        userdata.encrypted_fifo = request.data.get("fifo", userdata.encrypted_fifo)
-        userdata.encrypted_settings = request.data.get("settings", userdata.encrypted_settings)
-        userdata.save()
-        return Response({"status": "ok"}, status=status.HTTP_200_OK)
-    
-    
+            task = Task.objects.get(id=task_id, user=request.user)
+        except Task.DoesNotExist:
+            return Response({"error": "Task not found"}, status=404)
+
+        serializer = TaskSerializer(task, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+
+        return Response(serializer.errors, status=400)
+
+    # =========================
+    # DELETE - usuwanie
+    # =========================
+    def delete(self, request):
+        task_id = request.query_params.get("id")
+
+        if not task_id:
+            return Response({"error": "Task id required"}, status=400)
+
+        try:
+            task = Task.objects.get(id=task_id, user=request.user)
+        except Task.DoesNotExist:
+            return Response({"error": "Task not found"}, status=404)
+
+        task.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

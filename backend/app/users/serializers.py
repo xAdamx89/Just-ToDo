@@ -2,10 +2,9 @@ from django.contrib.auth.models import User
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
-from .models import UserProfile
+from .models import UserProfile, Task
 import base64
 import os
-
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -30,7 +29,6 @@ class RegisterSerializer(serializers.ModelSerializer):
 
         return user
     
-
 def safe_b64encode(value):
     if value is None:
         return None
@@ -40,7 +38,6 @@ def safe_b64encode(value):
     elif not isinstance(value, (bytes, bytearray)):
         raise TypeError(f"Expected bytes, got {type(value)}")
     return base64.b64encode(value).decode()
-
 
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
@@ -56,3 +53,19 @@ class LoginSerializer(serializers.Serializer):
         # Zwracamy użytkownika w validated_data do dalszego użycia
         data['user'] = user
         return data
+
+class TaskSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Task
+        fields = [
+            "id",
+            "title",
+            "description",
+            "priority",
+            "status",
+            "is_important",
+            "deadline",
+            "created_at",
+        ]
+        read_only_fields = ["id", "created_at"]
