@@ -38,7 +38,7 @@ interface Task {
   created_at: string;
 }
 
-type TaskFilter = "all" | "pending" | "completed" | "important";
+type TaskFilter = "all" | "pending" | "completed" | "important" | "critical";
 
 interface FifoItem {
   id: number;
@@ -330,22 +330,18 @@ export default function Dashboard() {
   // =========================
   const fetchTasks = async (filter: TaskFilter = taskFilter) => {
     setLoading(true);
-
     let url = API_URL;
 
     if (filter === "pending") url += "?status=pending";
     if (filter === "completed") url += "?status=completed";
     if (filter === "important") url += "?important=true";
+    if (filter === "critical") url += "?priority=critical";
 
     try {
       const res = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${getToken()}`,
-        },
+        headers: { Authorization: `Bearer ${getToken()}` },
       });
-
       if (!res.ok) throw new Error("Błąd pobierania tasków");
-
       const data = await res.json();
       setTasks(data);
     } catch (err) {
@@ -377,20 +373,39 @@ export default function Dashboard() {
     // =========================
   // FILTER + SEARCH (frontend)
   // =========================
-  const filteredTasks = useMemo(() => {
-    let result = tasks;
+const filteredTasks = useMemo(() => {
+  let result = tasks;
 
-    if (taskSearch.trim() !== "") {
-      const query = taskSearch.toLowerCase();
-      result = result.filter(
-        (t) =>
-          t.title.toLowerCase().includes(query) ||
-          t.description?.toLowerCase().includes(query)
-      );
-    }
+  // SEARCH
+  if (taskSearch.trim() !== "") {
+    const query = taskSearch.toLowerCase();
+    result = result.filter(
+      (t) =>
+        t.title.toLowerCase().includes(query) ||
+        t.description?.toLowerCase().includes(query)
+    );
+  }
 
-    return result;
-  }, [tasks, taskSearch]);
+  // FILTER
+  if (taskFilter !== "all") {
+    result = result.filter((t) => {
+      switch (taskFilter) {
+        case "pending":
+          return t.status === "pending";
+        case "completed":
+          return t.status === "completed";
+        case "important":
+          return t.is_important;
+        case "critical":
+          return t.priority === "critical"; // <-- upewnij się, że masz takie pole w taskach
+        default:
+          return true;
+      }
+    });
+  }
+
+  return result;
+}, [tasks, taskSearch, taskFilter]);
 
   // =========================
   // STATS (liczone w React)
@@ -400,7 +415,7 @@ export default function Dashboard() {
       total: tasks.length,
       pending: tasks.filter((t) => t.status === "pending").length,
       completed: tasks.filter((t) => t.status === "completed").length,
-      important: tasks.filter((t) => t.is_important).length,
+      important: tasks.filter((t) => t.priority === "critical").length,
     };
   }, [tasks]);
 
@@ -569,27 +584,31 @@ export default function Dashboard() {
               {/* Stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                  { label: "Wszystkie", value: stats.total, color: t.statAll },
-                  { label: "Do zrobienia", value: stats.pending, color: t.statPending },
-                  { label: "Ukończone", value: stats.completed, color: t.statDone },
-                  { label: "Ważne", value: stats.important, color: t.statImportant },
+                  { label: "Wszystkie", value: stats.total, color: t.statAll, filter: "all" as TaskFilter },
+                  { label: "Do zrobienia", value: stats.pending, color: t.statPending, filter: "pending" as TaskFilter },
+                  { label: "Ukończone", value: stats.completed, color: t.statDone, filter: "completed" as TaskFilter },
+                  { label: "Krytyczne", value: stats.important, color: t.statImportant, filter: "critical" as TaskFilter },
                 ].map((s) => (
-                  <div key={s.label} className={cn("p-4 rounded-2xl border", t.cardBg)}>
+                  <div
+                    key={s.label}
+                    className={cn("p-4 rounded-2xl border cursor-pointer", t.cardBg, taskFilter === s.filter ? "ring-2 ring-amber-500" : "")}
+                    onClick={() => setTaskFilter(s.filter)}
+                  >
                     <p className={cn("text-sm mb-1", t.textSecondary)}>{s.label}</p>
                     <p className={cn("text-2xl font-bold", s.color)}>{s.value}</p>
                   </div>
                 ))}
-              </div>
+                </div>
 
               {/* Toolbar */}
               <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
                 <div className="flex gap-2 flex-wrap">
-                  {(["all", "pending", "completed", "important"] as const).map((f) => (
+                  {(["all", "pending", "completed", "critical"] as const).map((f) => (
                     <button key={f} onClick={() => setTaskFilter(f)} className={cn("px-4 py-2 rounded-lg text-sm font-medium transition-all", taskFilter === f ? t.filterActive : t.filterInactive)}>
                       {f === "all" && "Wszystkie"}
                       {f === "pending" && "Do zrobienia"}
                       {f === "completed" && "Ukończone"}
-                      {f === "important" && "Ważne"}
+                      {f === "critical" && "Krytyczne"}
                     </button>
                   ))}
                 </div>
