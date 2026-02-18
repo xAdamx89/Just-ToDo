@@ -42,13 +42,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: todo_frontend
-    command: npm run dev -- --host 0.0.0.0
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - ./frontend/dist:/app/dist
     ports:
-      - "5173:5173"
+      - "80:80"
     networks:
       - todonet
     restart: unless-stopped
@@ -63,6 +58,7 @@ services:
       - ./backend/app/static:/static
       - ./backend/app/media:/media
       - ./frontend/dist:/usr/share/nginx/html
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - web
       - frontend

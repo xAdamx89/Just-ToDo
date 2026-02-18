@@ -12,4 +12,7 @@ export default defineConfig({
     }),
     tailwind(),
   ],
+  server: {
+    allowedHosts: ['justtodo.adam-mazurek.pl'],
+  },
 })

@@ -1,4 +1,4 @@
 #!/bin/bash
 set -e
 
-sudo docker-compose logs -f
+sudo docker compose logs -f
