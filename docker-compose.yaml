@@ -37,16 +37,17 @@ services:
     networks:
       - todonet
 
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: todo_frontend
-    ports:
-      - "80:80"
-    networks:
-      - todonet
-    restart: unless-stopped
+frontend:
+  image: nginx:alpine
+  container_name: todo_frontend
+  volumes:
+    - ./frontend/dist:/usr/share/nginx/html:ro
+    - ./frontend/nginx.prod.conf:/etc/nginx/conf.d/default.conf:ro
+  ports:
+    - "80:80"
+  networks:
+    - todonet
+  restart: unless-stopped
 
   nginx:
     image: nginx:stable
