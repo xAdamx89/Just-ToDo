@@ -57,7 +57,7 @@ services:
     image: nginx:stable
     container_name: nginx
     ports:
-      - "80:80"
+      - "8080:80"
     volumes:
       - ./backend/nginx/conf.d:/etc/nginx/conf.d
       - ./backend/app/static:/static
