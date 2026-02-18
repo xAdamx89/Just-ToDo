@@ -27,6 +27,12 @@ import { useMemo } from "react";
 // ── Types ──────────────────────────────────────────────
 type Theme = "dark" | "light";
 
+interface User {
+  id: number;
+  username: string;
+  email: string;
+}
+
 interface Task {
   id: number;
   title: string;
@@ -250,8 +256,8 @@ export default function Dashboard() {
   const [taskFilter, setTaskFilter] = useState<TaskFilter>("all");
   const [taskSearch, setTaskSearch] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const API_URL = "/api/api/tasks/";
+  const [user, setUser] = useState<User | null>(null);
+  const API_URL = "/api/tasks/";
 
   const handleLogout = () => {
     localStorage.clear();
@@ -260,6 +266,22 @@ export default function Dashboard() {
     // Przekierowanie na stronę główną
     navigate("/", { replace: true });
   };
+
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+
+    fetch("http://localhost:8000/api/me/", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => setUser(data))
+      .catch((err) => console.error("Błąd pobierania usera:", err));
+  }, []);
+
+
 
     // =========================
   // ADD TASK
@@ -509,8 +531,8 @@ const filteredTasks = useMemo(() => {
             <AnimatePresence>
               {sidebarOpen && (
                 <motion.div initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: "auto" }} exit={{ opacity: 0, width: 0 }} className="overflow-hidden flex-1">
-                  <p className={cn("text-sm font-medium truncate", t.textPrimary)}>Jan Doe</p>
-                  <p className={cn("text-xs truncate", t.textSecondary)}>jan@example.com</p>
+                  <p className={cn("text-sm font-medium truncate", t.textPrimary)}>{user?.username ?? "Brak nazwy użytkownika"}</p>
+                  <p className={cn("text-xs truncate", t.textSecondary)}>{user?.email || "Brak email w bazie danych"}</p>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -818,10 +840,10 @@ const filteredTasks = useMemo(() => {
                 <h3 className={cn("text-lg font-semibold mb-4", t.textPrimary)}>Ustawienia profilu</h3>
                 <div className="space-y-4">
                   {[
-                    { label: "Nazwa użytkownika", value: "jan_doe", type: "text" },
-                    { label: "Email", value: "jan@example.com", type: "email" },
-                    { label: "Imię", value: "Jan", type: "text" },
-                    { label: "Nazwisko", value: "Doe", type: "text" },
+                    { label: "Nazwa użytkownika", value: user?.username ?? "Brak nazwy użytkownika", type: "text" },
+                    { label: "Email", value: user?.email ?? "Brak email w bazie danych", type: "email" },
+                    { label: "Imię", value: "", type: "text" },
+                    { label: "Nazwisko", value: "", type: "text" },
                   ].map((field) => (
                     <div key={field.label}>
                       <label className={cn("block text-sm mb-2", t.textSecondary)}>{field.label}</label>
