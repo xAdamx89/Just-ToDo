@@ -257,7 +257,7 @@ export default function Dashboard() {
   const [taskSearch, setTaskSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
-  const API_URL = "/api/tasks/";
+  const API_URL = "https://justtodo.adam-mazurek.pl";
 
   const handleLogout = () => {
     localStorage.clear();
@@ -271,7 +271,7 @@ export default function Dashboard() {
     const token = localStorage.getItem("access_token");
     if (!token) return;
 
-    fetch("http://localhost:8000/api/me/", {
+    fetch(`${API_URL}/api/me/`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -288,7 +288,7 @@ export default function Dashboard() {
   // =========================
   const addTask = async (taskData: Omit<Task, "id" | "created_at">) => {
     try {
-      let res = await fetch(API_URL, {
+      let res = await fetch(`${API_URL}/api/tasks/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -310,7 +310,7 @@ export default function Dashboard() {
   // =========================
   const updateTask = async (id: number, updates: Partial<Task>) => {
     try {
-      const res = await fetch(`${API_URL}?id=${id}`, {
+      const res = await fetch(`${API_URL}/api/tasks?id=${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -332,7 +332,7 @@ export default function Dashboard() {
   // =========================
   const deleteTask = async (id: number) => {
     try {
-      const res = await fetch(`${API_URL}?id=${id}`, {
+      const res = await fetch(`${API_URL}/api/tasks?id=${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${getToken()}`,

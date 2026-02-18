@@ -104,7 +104,7 @@ function Register() {
         iv: toBase64(iv),
       };
 
-      const response = await fetch("http://localhost/api/register/", {
+      const response = await fetch("https://justtodo.adam-mazurek.pl/api/register/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
