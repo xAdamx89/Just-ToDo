@@ -16,16 +16,6 @@ function Home() {
       title: "Priorytety",
       description: "Oznaczaj najważniejsze zadania i osiągaj cele szybciej"
     },
-    {
-      icon: Shield,
-      title: "Bezpieczeństwo",
-      description: "Twoje dane są bezpieczne i chronione"
-    },
-    {
-      icon: Sparkles,
-      title: "Inteligentne",
-      description: "Smart funkcje, które ułatwiają codzienną produktywność"
-    }
   ];
 
   const containerVariants = {
@@ -175,7 +165,7 @@ function Home() {
             Dlaczego Just ToDo?
           </motion.h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {features.map((feature, index) => (
               <motion.div
                 key={index}
@@ -222,12 +212,10 @@ function Home() {
                 stworzona z myślą o prostocie i efektywności.
               </p>
               <p>
-                Nasza misja to pomóc Ci w organizacji codziennych aktywności, 
-                wyznaczaniu priorytetów i osiąganiu celów - bez zbędnych komplikacji.
+                Projekt ten jest autorskim pomysłem na zarządzanie swoim czasem oraz zadaniami, które w ciągu dnia trzeba zrobić.
               </p>
               <p className="text-amber-300/60 text-base italic">
-                [Tutaj możesz dodać więcej szczegółów o projekcie, funkcjach, 
-                wizji rozwoju czy zespole...]
+                {/*Miejsce na dalszy opis*/}
               </p>
             </div>
           </div>
@@ -240,7 +228,7 @@ function Home() {
           transition={{ delay: 1.5, duration: 0.8 }}
           className="text-center mt-16 text-amber-300/50 text-sm"
         >
-          <p>&copy; 2026 Just ToDo. Wszystkie prawa zastrzeżone.</p>
+         {/* <p>&copy; 2026 Just ToDo. Wszystkie prawa zastrzeżone.</p>*/}
         </motion.div>
       </div>
     </div>

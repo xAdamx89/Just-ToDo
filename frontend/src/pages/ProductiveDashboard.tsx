@@ -271,7 +271,7 @@ export default function Dashboard() {
     const token = localStorage.getItem("access_token");
     if (!token) return;
 
-    fetch(`${API_URL}/api/me/`, {
+    fetch(`${API_URL}/api/api/me/`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -288,7 +288,7 @@ export default function Dashboard() {
   // =========================
   const addTask = async (taskData: Omit<Task, "id" | "created_at">) => {
     try {
-      let res = await fetch(`${API_URL}/api/tasks/`, {
+      let res = await fetch(`${API_URL}/api/api/tasks/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -310,7 +310,7 @@ export default function Dashboard() {
   // =========================
   const updateTask = async (id: number, updates: Partial<Task>) => {
     try {
-      const res = await fetch(`${API_URL}/api/tasks?id=${id}`, {
+      const res = await fetch(`${API_URL}/api/api/tasks/?id=${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -332,7 +332,7 @@ export default function Dashboard() {
   // =========================
   const deleteTask = async (id: number) => {
     try {
-      const res = await fetch(`${API_URL}/api/tasks?id=${id}`, {
+      const res = await fetch(`${API_URL}/api/api/tasks/?id=${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${getToken()}`,
@@ -352,7 +352,7 @@ export default function Dashboard() {
   // =========================
   const fetchTasks = async (filter: TaskFilter = taskFilter) => {
     setLoading(true);
-    let url = API_URL;
+    let url = `${API_URL}/api/api/tasks/`;
 
     if (filter === "pending") url += "?status=pending";
     if (filter === "completed") url += "?status=completed";

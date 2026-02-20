@@ -17,7 +17,7 @@ async function deriveKeyFromPassword(password: string, salt: Uint8Array, iterati
   return crypto.subtle.deriveKey(
     {
       name: "PBKDF2",
-      salt: salt.buffer as ArrayBuffer, // 👈 jawne zawężenie
+      salt: salt.buffer as ArrayBuffer,
       iterations,
       hash: "SHA-256",
     },
@@ -63,7 +63,7 @@ function Login() {
     setLoading(true);
 
     try {
-      const response = await fetch("https://justtodo.adam-mazurek.pl/api/login/", {
+      const response = await fetch("https://justtodo.adam-mazurek.pl/api/api/login/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
