@@ -258,9 +258,60 @@ export default function Dashboard() {
     navigate("/", { replace: true });
   };
 
+  const refreshAccessToken = async (): Promise<string | null> => {
+    const refreshToken = localStorage.getItem("refresh_token");
+
+    if (!refreshToken) {
+      return null;
+    }
+
+    try {
+      const response = await fetch(
+        "https://justtodo.adam-mazurek.pl/api/api/refresh/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            refresh: refreshToken,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        // 401 lub 400
+        console.error("Refresh failed:", response.status);
+        return null;
+      }
+
+      const data: { access: string } = await response.json();
+
+      // zapisujemy nowy access token
+      localStorage.setItem("access_token", data.access);
+
+      return data.access;
+    } catch (error) {
+      console.error("Network error during refresh:", error);
+      return null;
+    }
+  };
+
   useEffect(() => {
     const token = localStorage.getItem("access_token");
-    if (!token) { navigate("/", { replace: true }); return; }
+    if (!token) {
+      const refreshToken = localStorage.getItem("refresh_token");
+      if (refreshToken) {
+        refreshAccessToken().then((newToken) => {
+          if (!newToken) {
+            navigate("/", { replace: true });
+          }
+        });
+      } else {
+        navigate("/", { replace: true });
+        return;
+      }
+    }
 
     fetch(`${API_URL}/api/api/me/`, {
       headers: {
