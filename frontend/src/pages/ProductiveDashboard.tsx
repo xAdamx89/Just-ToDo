@@ -59,15 +59,6 @@ interface SharedUser {
   shared_lists: string[];
 }
 
-// // ── Sample data ────────────────────────────────────────
-// const sampleTasks: Task[] = [
-//   { id: 1, title: "Przygotować prezentację", description: "PowerPoint dla klienta", priority: "high", status: "in_progress", is_important: true, deadline: "2024-02-20", created_at: "2024-02-15" },
-//   { id: 2, title: "Napisać raport miesięczny", description: "", priority: "medium", status: "pending", is_important: false, deadline: "2024-02-25", created_at: "2024-02-16" },
-//   { id: 3, title: "Zadzwonić do kontrahenta", description: "Omówić warunki umowy", priority: "high", status: "pending", is_important: true, deadline: "2024-02-18", created_at: "2024-02-17" },
-//   { id: 4, title: "Zaktualizować dokumentację", description: "", priority: "low", status: "completed", is_important: false, deadline: null, created_at: "2024-02-10" },
-//   { id: 5, title: "Spotkanie zespołu", description: "Cotygodniowy stand-up", priority: "medium", status: "pending", is_important: false, deadline: "2024-02-19", created_at: "2024-02-17" },
-// ];
-
 const sampleFifoItems: FifoItem[] = [
   { id: 1, title: "Naprawić bug w logowaniu", created_at: "2024-02-15" },
   { id: 2, title: "Zrobić backup bazy danych", created_at: "2024-02-14" },
@@ -269,7 +260,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
-    if (!token) return;
+    if (!token) { navigate("/", { replace: true }); return; }
 
     fetch(`${API_URL}/api/api/me/`, {
       headers: {

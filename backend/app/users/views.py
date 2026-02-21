@@ -9,6 +9,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
 
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import x25519
@@ -116,6 +117,35 @@ class LoginView(APIView):
 
         return Response(response_data, status=status.HTTP_200_OK)
     
+class RefreshTokenView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        refresh_token = request.data.get("refresh")
+
+        if not refresh_token:
+            return Response(
+                {"detail": "Refresh token is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            refresh = RefreshToken(refresh_token)
+            access_token = refresh.access_token
+
+            return Response(
+                {
+                    "access": str(access_token),
+                },
+                status=status.HTTP_200_OK
+            )
+
+        except TokenError:
+            return Response(
+                {"detail": "Invalid or expired refresh token."},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
 class MeView(APIView):
     def get(self, request):
         return Response({
