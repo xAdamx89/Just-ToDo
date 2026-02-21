@@ -1,38 +1,28 @@
+import base64
+import os
+
+from django.contrib.auth.models import User
+from django.db.models import Q
+
 from rest_framework import generics, status
-from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.contrib.auth.models import User
-from .serializers import RegisterSerializer, LoginSerializer, safe_b64encode
-from .models import UserProfile
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+
 from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.asymmetric import x25519
-from cryptography.hazmat.primitives.serialization import Encoding, PrivateFormat, PublicFormat, NoEncryption
-import base64
-import os
-import base64
-import os
-from django.contrib.auth.models import User
-from rest_framework import generics, status
-from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
-from .models import UserProfile
-from .serializers import RegisterSerializer
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from cryptography.hazmat.primitives.asymmetric import x25519
-from cryptography.hazmat.primitives.serialization import Encoding, PrivateFormat, PublicFormat, NoEncryption
-from django.db.models import Q
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework import status
-from .models import Task
-from .serializers import TaskSerializer
+from cryptography.hazmat.primitives.serialization import (
+    Encoding,
+    NoEncryption,
+    PrivateFormat,
+    PublicFormat,
+)
+
+from .models import Task, UserProfile
+from .serializers import LoginSerializer, RegisterSerializer, TaskSerializer, safe_b64encode
 
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
@@ -94,7 +84,6 @@ class RegisterView(generics.CreateAPIView):
             "iv": base64.b64encode(iv).decode()  # frontend potrzebuje IV do odszyfrowania
         }, status=status.HTTP_201_CREATED)
 
-
 class LoginView(APIView):
     permission_classes = [AllowAny]
 
@@ -127,7 +116,6 @@ class LoginView(APIView):
 
         return Response(response_data, status=status.HTTP_200_OK)
     
-    
 class MeView(APIView):
     def get(self, request):
         return Response({
@@ -135,14 +123,6 @@ class MeView(APIView):
             "username": request.user.username,
             "email": request.user.email
         })
-
-import base64
-from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework import status
-from .models import EncryptedObject
-
 
 class EncryptedObjectView(APIView):
     permission_classes = [IsAuthenticated]
