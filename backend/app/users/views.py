@@ -8,6 +8,7 @@ from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 
@@ -93,9 +94,9 @@ class LoginView(APIView):
         serializer.is_valid(raise_exception=True)
 
         user = serializer.validated_data['user']
-        profile = user.userprofile
 
         # Generujemy JWT
+        token = AccessToken.for_user(user)
         refresh = RefreshToken.for_user(user)
 
         # Tworzymy właściwą strukturę odpowiedzi
@@ -105,13 +106,13 @@ class LoginView(APIView):
                 "username": user.username,
                 "email": user.email,
             },
-            "access": str(refresh.access_token),
-            "refresh": str(refresh),
-            "encryption": {
-                "kdf_salt": safe_b64encode(profile.kdf_salt),
-                "kdf_iterations": profile.kdf_iterations,  # pozostaje int
-                "public_key": safe_b64encode(profile.public_key),
-                "encrypted_private_key": safe_b64encode(profile.encrypted_private_key),
+            "access": {
+                "token": str(token),
+                "expires_in": int(token.lifetime.total_seconds() / 60)
+            },
+            "refresh": {
+                "token": str(refresh),
+                "expires_in": int(refresh.lifetime.total_seconds() / 60)
             }
         }
 

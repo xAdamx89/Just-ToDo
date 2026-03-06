@@ -236,6 +236,7 @@ async function refreshAccessToken() {
 // }
 
 // ── Component ──────────────────────────────────────────
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const [activeView, setActiveView] = useState("tasks");
@@ -322,8 +323,6 @@ export default function Dashboard() {
       .then((data) => setUser(data))
       .catch((err) => console.error("Błąd pobierania usera:", err));
   }, []);
-
-
 
     // =========================
   // ADD TASK
@@ -504,7 +503,6 @@ const filteredTasks = useMemo(() => {
   const t = useThemeClasses(theme);
   const d = theme === "dark";
 
-
   // ── FIFO handlers (First In First Out) ─────────────────
   const addFifoItem = () => {
     if (!newFifo.trim()) return;
@@ -514,7 +512,6 @@ const filteredTasks = useMemo(() => {
   };
   const dequeueFifoItem = () => setFifoItems((prev) => prev.slice(1)); // dequeue from front
   const deleteFifoItem = (id: number) => setFifoItems((prev) => prev.filter((i) => i.id !== id));
-
 
   // FIFO form
   const [newFifo, setNewFifo] = useState("");
