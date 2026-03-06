@@ -207,34 +207,6 @@ async function refreshAccessToken() {
   return true;
 }
 
-// function getAuthHeader() {
-//   const token = localStorage.getItem("access_token");
-//   return token ? { Authorization: `Bearer ${token}` } : {};
-// }
-
-// export async function fetchEncryptedObjects(
-//   objectType: "tasks" | "fifo" | "settings"
-// ) {
-//   const authHeader = getAuthHeader();
-//   const response = await fetch(
-//     `${API_BASE}/objects/?type=${objectType}`,
-//     {
-//       method: "GET",
-//       headers: {
-//         "Content-Type": "application/json",
-//         ...getAuthHeader()
-//       },
-//     }
-//   );
-
-//   if (!response.ok) {
-//     const text = await response.text();
-//     throw new Error(`Fetch error: ${response.status} ${text}`);
-//   }
-
-//   return await response.json(); // zwraca tablicę
-// }
-
 // ── Component ──────────────────────────────────────────
 
 export default function Dashboard() {

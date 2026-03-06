@@ -3,52 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Lock, ArrowLeft, User } from "lucide-react";
 
-// async function deriveKeyFromPassword(password: string, salt: Uint8Array, iterations: number) {
-//   const enc = new TextEncoder();
-
-//   const keyMaterial = await crypto.subtle.importKey(
-//     "raw",
-//     enc.encode(password),
-//     { name: "PBKDF2" },
-//     false,
-//     ["deriveKey"]
-//   );
-
-//   return crypto.subtle.deriveKey(
-//     {
-//       name: "PBKDF2",
-//       salt: salt.buffer as ArrayBuffer,
-//       iterations,
-//       hash: "SHA-256",
-//     },
-//     keyMaterial,
-//     { name: "AES-GCM", length: 256 },
-//     true,
-//     ["encrypt", "decrypt"]
-//   )
-// ;}
-
-// async function decryptPrivateKey(
-//   encryptedPrivateKey: Uint8Array,
-//   derivedKey: CryptoKey,
-//   iv: Uint8Array
-// ): Promise<ArrayBuffer> {
-//   return crypto.subtle.decrypt(
-//     {
-//       name: "AES-GCM",
-//       iv: toArrayBuffer(iv),
-//     },
-//     derivedKey,
-//     toArrayBuffer(encryptedPrivateKey)
-//   );
-// }
-
-// function toArrayBuffer(view: Uint8Array): ArrayBuffer {
-//   const buffer = new ArrayBuffer(view.byteLength);
-//   new Uint8Array(buffer).set(view);
-//   return buffer;
-// }
-
 function Login() {
   const navigate = useNavigate();
 
@@ -70,36 +24,14 @@ function Login() {
       });
 
       const data = await response.json();
+
       if (!response.ok) throw new Error(data.detail || "Nieprawidłowe dane logowania");
-
-      // const { kdf_salt, kdf_iterations, public_key, encrypted_private_key, iv } = data.encryption;
-
-      // // ───────── Funkcja konwertująca Base64 -> Uint8Array ─────────
-      // const base64ToUint8 = (b64: string | null): Uint8Array | null => {
-      //   if (!b64) return null;
-      //   return Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-      // };
-
-      // // const salt = base64ToUint8(kdf_salt);
-      // const ciphertext = base64ToUint8(encrypted_private_key);
-      // const nonce = base64ToUint8(iv);
-
-      // let privateKeyBuffer: ArrayBuffer | null = null;
-
-      // // ───────── Jeśli mamy zaszyfrowany private key ─────────
-      // if (ciphertext && salt && nonce) {
-      //   const derivedKey = await deriveKeyFromPassword(password, salt, kdf_iterations);
-      //   privateKeyBuffer = await decryptPrivateKey(ciphertext, derivedKey, nonce);
-      // }
-
-      // 🔐 Trzymamy privateKeyBuffer w React Context lub w pamięci
-      // ⚠️ NIE zapisujemy go w localStorage
 
       // ───────── Zapis JWT ─────────
       localStorage.setItem("access_token", data.access.token);
-      localStorage.setItem("access_token_expires_in", String(data.access.expire_in));
+      localStorage.setItem("access_token_expires_in", String(data.access.expires_in));
       localStorage.setItem("refresh_token", data.refresh.token);
-      localStorage.setItem("refresh_token_expires_in", String(data.refresh.expire_in));
+      localStorage.setItem("refresh_token_expires_in", String(data.refresh.expires_in));
 
       // ───────── Przekierowanie ─────────
       navigate("/productivedashboard");

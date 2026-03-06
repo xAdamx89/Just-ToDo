@@ -94,6 +94,7 @@ class LoginView(APIView):
         serializer.is_valid(raise_exception=True)
 
         user = serializer.validated_data['user']
+        profile = user.userprofile
 
         # Generujemy JWT
         token = AccessToken.for_user(user)
@@ -113,7 +114,7 @@ class LoginView(APIView):
             "refresh": {
                 "token": str(refresh),
                 "expires_in": int(refresh.lifetime.total_seconds() / 60)
-            }
+            },
         }
 
         return Response(response_data, status=status.HTTP_200_OK)
