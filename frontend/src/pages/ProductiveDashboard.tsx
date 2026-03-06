@@ -596,10 +596,10 @@ const filteredTasks = useMemo(() => {
       </motion.aside>
 
       {/* ─── Main Content ─── */}
-      <main className="flex-1 overflow-auto relative z-10">
-        <div className="p-6 md:p-8 max-w-6xl mx-auto">
+      <main className="flex-1 h-screen overflow-hidden relative z-10 flex flex-col">
+        <div className="p-6 md:p-8 max-w-6xl mx-auto w-full flex flex-col h-full">
           {/* Header */}
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex-shrink-0 mb-8">
             <h1 className={cn("text-3xl font-bold mb-1", t.textPrimary)}>
               {navItems.find((n) => n.id === activeView)?.label}
             </h1>
@@ -616,7 +616,7 @@ const filteredTasks = useMemo(() => {
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col h-full overflow-hidden space-y-6">
               {/* Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="flex-shrink-0 grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
                   { label: "Wszystkie", value: stats.total, color: t.statAll, filter: "all" as TaskFilter },
                   { label: "Do zrobienia", value: stats.pending, color: t.statPending, filter: "pending" as TaskFilter },
@@ -635,7 +635,7 @@ const filteredTasks = useMemo(() => {
                 </div>
 
               {/* Toolbar */}
-              <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+              <div className="flex-shrink-0 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
                 <div className="flex gap-2 flex-wrap">
                   {(["all", "pending", "completed", "critical"] as const).map((f) => (
                     <button key={f} onClick={() => setTaskFilter(f)} className={cn("px-4 py-2 rounded-lg text-sm font-medium transition-all", taskFilter === f ? t.filterActive : t.filterInactive)}>
