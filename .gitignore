@@ -5,6 +5,7 @@ __pycache__/
 
 backend/postgres_data/
 github-token
+backend/app/todo/migrations/
 
 # C extensions
 *.so
