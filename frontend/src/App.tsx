@@ -4,6 +4,7 @@ import Login from "./pages/Login.tsx";
 import Register from "./pages/Register.tsx";
 import PrDashboard from "./pages/ProductiveDashboard.tsx";
 import PrivateRoute from "./PrivateRoute.tsx";
+import "./index.css";
 
 function App() {
   return (

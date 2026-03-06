@@ -1,1 +1,29 @@
 @import "tailwindcss";
+
+/* Stylizacja paska przewijania dla nowoczesnych przeglądarek (Chrome, Safari, Edge) */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px; /* Szerokość paska */
+  height: 6px; /* Wysokość dla scrolla poziomego */
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent; /* Tło toru paska - przeźroczyste, by nie psuć designu */
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  /* Kolor suwaka - używamy półprzeźroczystego bursztynu (amber-500/20) */
+  background: rgba(245, 158, 11, 0.2); 
+  border-radius: 20px;
+  transition: background 0.3s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  /* Kolor suwaka po najechaniu myszką (amber-500/50) */
+  background: rgba(245, 158, 11, 0.5); 
+}
+
+/* Opcjonalnie: Stylizacja dla Firefox */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(245, 158, 11, 0.2) transparent;
+}
