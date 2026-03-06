@@ -616,7 +616,7 @@ const filteredTasks = useMemo(() => {
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col h-full overflow-hidden space-y-6">
               {/* Stats */}
-              <div className="flex-shrink-0 grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="flex-shrink-0 grid grid-cols-2 md:grid-cols-4 gap-4 p-1">
                 {[
                   { label: "Wszystkie", value: stats.total, color: t.statAll, filter: "all" as TaskFilter },
                   { label: "Do zrobienia", value: stats.pending, color: t.statPending, filter: "pending" as TaskFilter },
@@ -625,7 +625,7 @@ const filteredTasks = useMemo(() => {
                 ].map((s) => (
                   <div
                     key={s.label}
-                    className={cn("p-4 rounded-2xl border cursor-pointer", t.cardBg, taskFilter === s.filter ? "ring-2 ring-amber-500" : "")}
+                    className={cn("p-4 rounded-2xl border cursor-pointer transition-all", t.cardBg, taskFilter === s.filter ? "ring-2 ring-amber-500" : "")}
                     onClick={() => setTaskFilter(s.filter)}
                   >
                     <p className={cn("text-sm mb-1", t.textSecondary)}>{s.label}</p>
