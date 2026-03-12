@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CheckCircle2,
@@ -57,6 +57,11 @@ interface SharedUser {
   username: string;
   email: string;
   shared_lists: string[];
+}
+
+interface TokenData {
+  tokenString: string;
+  expiresIn: string;
 }
 
 const sampleFifoItems: FifoItem[] = [
@@ -186,52 +191,22 @@ function useThemeClasses(theme: Theme) {
   };
 }
 
-function getToken() {
-  return localStorage.getItem("access_token") || "";
-}
+function getToken(option: "access_token" | "refresh_token"): TokenData | null {
+  const tokenKey = option;
+  const expiresKey = `${option}_expires_in`;
+  
+  const token = localStorage.getItem(tokenKey);
+  const expires = localStorage.getItem(expiresKey);
 
-async function refreshAccessToken() {
-  const refresh = localStorage.getItem("refresh_token");
-  if (!refresh) return false;
+  if (!token) return null;
 
-  const res = await fetch("/api/token/refresh/", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ refresh }),
-  });
-
-  if (!res.ok) return false;
-
-  const data = await res.json();
-  localStorage.setItem("access_token", data.access);
-  return true;
-}
-
-// ── Component ──────────────────────────────────────────
-
-export default function Dashboard() {
-  const navigate = useNavigate();
-  const [activeView, setActiveView] = useState("tasks");
-  // const [tasks, setTasks] = useState<Task[]>(sampleTasks);
-  const [fifoItems, setFifoItems] = useState<FifoItem[]>(sampleFifoItems);
-  const [sharedUsers] = useState<SharedUser[]>(sampleSharedUsers);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [taskFilter, setTaskFilter] = useState<TaskFilter>("all");
-  const [taskSearch, setTaskSearch] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
-  const API_URL = "https://justtodo.adam-mazurek.pl";
-
-  const handleLogout = () => {
-    localStorage.clear();
-    sessionStorage.clear();
-
-    // Przekierowanie na stronę główną
-    navigate("/", { replace: true });
+  return {
+    tokenString: token,
+    expiresIn: expires || ""
   };
+}
 
-  const refreshAccessToken = async (): Promise<string | null> => {
+async function refreshAccessToken(): Promise<string | null> {
     const refreshToken = localStorage.getItem("refresh_token");
 
     if (!refreshToken) {
@@ -268,6 +243,78 @@ export default function Dashboard() {
       console.error("Network error during refresh:", error);
       return null;
     }
+};
+
+// Funkcja pomocnicza do sprawdzania czy token wygasł
+const isTokenExpired = (option: "access" | "refresh"): boolean => {
+  const expiresAt = localStorage.getItem(`${option}_token_expires_at`);
+  if (!expiresAt) return true;
+
+  // Porównujemy dwie liczby w tym samym formacie (milisekundy)
+  // Odejmujemy 10 sekund marginesu na opóźnienie sieci
+  return Date.now() >= (parseInt(expiresAt) - 10000);
+};
+
+// GŁÓWNA FUNKCJA DO ZAPYTAŃ
+const smartFetch = async (url: string, options: any = {}, retryCount = 0) => {
+  let authData = getToken("access_token");
+
+  // 1. Jeśli tokenu nie ma LUB wygasł - odświeżamy
+  if (!authData?.tokenString || isTokenExpired("access")) {
+    console.log("Token wygasł lub brak, próbuję odświeżyć...");
+    const newToken = await refreshAccessToken();
+    
+    if (!newToken) {
+      throw new Error("UNAUTHORIZED");
+    }
+    
+    // Pobierz świeże dane po odświeżeniu
+    authData = getToken("access_token");
+  }
+
+  // 2. Dodaj aktualny token do nagłówków
+  const headers = {
+    ...options.headers,
+    'Authorization': `Bearer ${authData?.tokenString}`,
+    'Content-Type': 'application/json'
+  };
+
+  // 3. Wykonaj właściwe zapytanie
+  const response = await fetch(url, { ...options, headers });
+
+  // 4. Jeśli serwer i tak zwróci 401 (np. token zczyszczony na serwerze)
+  if (response.status === 401 && retryCount < 1) {
+    const retryToken = await refreshAccessToken();
+    if (!retryToken) throw new Error("UNAUTHORIZED");
+    
+    // Ponów zapytanie raz jeszcze z nowym tokenem
+    return smartFetch(url, options, retryCount + 1); 
+  }
+
+  return response;
+};
+
+// ── Component ──────────────────────────────────────────
+
+export default function Dashboard() {
+  const navigate = useNavigate();
+  const [activeView, setActiveView] = useState("tasks");
+  const [fifoItems, setFifoItems] = useState<FifoItem[]>(sampleFifoItems);
+  const [sharedUsers] = useState<SharedUser[]>(sampleSharedUsers);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [taskFilter, setTaskFilter] = useState<TaskFilter>("all");
+  const [taskSearch, setTaskSearch] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const API_URL = import.meta.env.VITE_API_URL;
+
+  const handleLogout = () => {
+    localStorage.clear();
+    sessionStorage.clear();
+
+    // Przekierowanie na stronę główną
+    navigate("/", { replace: true });
   };
 
   useEffect(() => {
@@ -305,7 +352,7 @@ export default function Dashboard() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${getToken()}`,
+          Authorization: `Bearer ${getToken("access_token")}`,
         },
         body: JSON.stringify(taskData),
       });
@@ -327,7 +374,7 @@ export default function Dashboard() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${getToken()}`,
+          Authorization: `Bearer ${getToken("access_token")}`,
         },
         body: JSON.stringify(updates),
       });
@@ -348,7 +395,7 @@ export default function Dashboard() {
       const res = await fetch(`${API_URL}/api/api/tasks/?id=${id}`, {
         method: "DELETE",
         headers: {
-          Authorization: `Bearer ${getToken()}`,
+          Authorization: `Bearer ${getToken("access_token")}`,
         },
       });
 
@@ -365,22 +412,53 @@ export default function Dashboard() {
   // =========================
   const fetchTasks = async (filter: TaskFilter = taskFilter) => {
     setLoading(true);
-    let url = `${API_URL}/api/api/tasks/`;
+    // let url = `${API_URL}/api/api/tasks/`;
 
-    if (filter === "pending") url += "?status=pending";
-    if (filter === "completed") url += "?status=completed";
-    if (filter === "important") url += "?important=true";
-    if (filter === "critical") url += "?priority=critical";
+    let url = `${API_URL}/api/api/tasks/`;
+    const params = new URLSearchParams();
+
+    if (filter === "pending") params.append("status", "pending");
+    if (filter === "completed") params.append("status", "completed");
+    if (filter === "important") params.append("important", "true");
+    if (filter === "critical") params.append("priority", "critical");
+
+    const finalUrl = params.toString() ? `${url}?${params.toString()}` : url;
+
+    // if (filter === "pending") url += "?status=pending";
+    // if (filter === "completed") url += "?status=completed";
+    // if (filter === "important") url += "?important=true";
+    // if (filter === "critical") url += "?priority=critical";
 
     try {
-      const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
-      if (!res.ok) throw new Error("Błąd pobierania tasków");
+      // const res = await fetch(url, {
+      //   headers: { Authorization: `Bearer ${getToken()}` },
+      // });
+
+      const res = await smartFetch(finalUrl);
+      if (!res.ok) throw new Error("Błąd pobierania danych z serwera");
+
+      // if (res.status === 401) {
+      //   refreshAccessToken().then((newToken) => {
+      //     if (!newToken) {
+      //       localStorage.removeItem("access_token");
+      //       localStorage.removeItem("refresh_token");
+      //       navigate("/", { replace: true });
+      //     }
+      //   });
+      //   return;
+      // }
+      // else if (!res.ok) throw new Error("Błąd pobierania tasków");
+      
       const data = await res.json();
       setTasks(data);
-    } catch (err) {
-      console.error(err);
+      
+    } catch (err: any) {
+        // 3. Jeśli smartFetch rzuci błąd UNAUTHORIZED, przekierowujemy
+      if (err.message === "UNAUTHORIZED") {
+        navigate("/", { replace: true });
+      } else {
+        console.error("Fetch Error:", err);
+      }
     } finally {
       setLoading(false);
     }
@@ -456,12 +534,14 @@ const filteredTasks = useMemo(() => {
 
     // AUTO LOAD
   // =========================
-  useEffect(() => {
-    if (getToken()) fetchTasks();
-  }, [getToken()]);
+  // useEffect(() => {
+  //   if (getToken()) fetchTasks();
+  // }, [getToken()]);
 
   useEffect(() => {
     fetchTasks(taskFilter);
+    // smartFetch(API_URL, taskFilter)
+
   }, [taskFilter]);
 
   // Theme

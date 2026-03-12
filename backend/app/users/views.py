@@ -1,5 +1,6 @@
 import base64
 import os
+from datetime import datetime, timezone 
 
 from django.contrib.auth.models import User
 from django.db.models import Q
@@ -100,6 +101,12 @@ class LoginView(APIView):
         token = AccessToken.for_user(user)
         refresh = RefreshToken.for_user(user)
 
+        now = datetime.now(timezone.utc)
+        issue_at_ts = int(now.timestamp() * 1000)
+
+        access_expires_at = int((now + token.lifetime).timestamp() * 1000)
+        refresh_expires_at = int((now + refresh.lifetime).timestamp() * 1000)
+
         # Tworzymy właściwą strukturę odpowiedzi
         response_data = {
             "user": {
@@ -109,12 +116,13 @@ class LoginView(APIView):
             },
             "access": {
                 "token": str(token),
-                "expires_in": int(token.lifetime.total_seconds() / 60)
+                "expires_in": access_expires_at
             },
             "refresh": {
                 "token": str(refresh),
-                "expires_in": int(refresh.lifetime.total_seconds() / 60)
+                "expires_in": refresh_expires_at
             },
+            "issue_at": issue_at_ts
         }
 
         return Response(response_data, status=status.HTTP_200_OK)

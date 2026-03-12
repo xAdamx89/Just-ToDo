@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Lock, ArrowLeft, User } from "lucide-react";
 
+
 function Login() {
   const navigate = useNavigate();
 
@@ -10,6 +11,7 @@ function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,7 +19,7 @@ function Login() {
     setLoading(true);
 
     try {
-      const response = await fetch("https://justtodo.adam-mazurek.pl/api/api/login/", {
+      const response = await fetch(`${API_URL}/api/api/login/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
@@ -29,9 +31,12 @@ function Login() {
 
       // ───────── Zapis JWT ─────────
       localStorage.setItem("access_token", data.access.token);
-      localStorage.setItem("access_token_expires_in", String(data.access.expires_in));
+      localStorage.setItem("access_token_expires_at", data.access.expires_at.toString());
+
       localStorage.setItem("refresh_token", data.refresh.token);
-      localStorage.setItem("refresh_token_expires_in", String(data.refresh.expires_in));
+      localStorage.setItem("refresh_token_expires_at", data.refresh.expires_at.toString());
+      
+      localStorage.setItem("issued_at", data.issued_at.toString());
 
       // ───────── Przekierowanie ─────────
       navigate("/productivedashboard");
