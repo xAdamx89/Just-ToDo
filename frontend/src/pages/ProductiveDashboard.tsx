@@ -343,24 +343,22 @@ export default function Dashboard() {
       .catch((err) => console.error("Błąd pobierania usera:", err));
   }, []);
 
-    // =========================
+  // =========================
   // ADD TASK
   // =========================
   const addTask = async (taskData: Omit<Task, "id" | "created_at">) => {
     try {
-      let res = await fetch(`${API_URL}/api/api/tasks/`, {
+      // Używamy smartFetch zamiast fetch - on sam doda Bearer Token!
+      const res = await smartFetch(`${API_URL}/api/api/tasks/`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${getToken("access_token")}`,
-        },
         body: JSON.stringify(taskData),
       });
 
       if (!res.ok) throw new Error("Błąd dodawania taska");
-
       await fetchTasks();
-    } catch (err) {
+      resetForm(); // Dodaj resetowanie formularza po sukcesie
+    } catch (err: any) {
+      if (err.message === "UNAUTHORIZED") navigate("/", { replace: true });
       console.error(err);
     }
   };
@@ -370,19 +368,15 @@ export default function Dashboard() {
   // =========================
   const updateTask = async (id: number, updates: Partial<Task>) => {
     try {
-      const res = await fetch(`${API_URL}/api/api/tasks/?id=${id}`, {
+      const res = await smartFetch(`${API_URL}/api/api/tasks/?id=${id}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${getToken("access_token")}`,
-        },
         body: JSON.stringify(updates),
       });
 
       if (!res.ok) throw new Error("Błąd aktualizacji taska");
-
       await fetchTasks();
-    } catch (err) {
+    } catch (err: any) {
+      if (err.message === "UNAUTHORIZED") navigate("/", { replace: true });
       console.error(err);
     }
   };
@@ -392,21 +386,17 @@ export default function Dashboard() {
   // =========================
   const deleteTask = async (id: number) => {
     try {
-      const res = await fetch(`${API_URL}/api/api/tasks/?id=${id}`, {
+      const res = await smartFetch(`${API_URL}/api/api/tasks/?id=${id}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${getToken("access_token")}`,
-        },
       });
 
       if (!res.ok) throw new Error("Błąd usuwania taska");
-
       await fetchTasks();
-    } catch (err) {
+    } catch (err: any) {
+      if (err.message === "UNAUTHORIZED") navigate("/", { replace: true });
       console.error(err);
     }
   };
-
   // =========================
   // FETCH TASKS
   // =========================
