@@ -31,13 +31,12 @@ function Login() {
 
       // ───────── Zapis JWT ─────────
       localStorage.setItem("access_token", data.access.token);
-      localStorage.setItem("access_token_expires_at", data.access.expires_at.toString());
+      localStorage.setItem("access_token_expires_at", data.access.expires_in.toString());
 
       localStorage.setItem("refresh_token", data.refresh.token);
-      localStorage.setItem("refresh_token_expires_at", data.refresh.expires_at.toString());
-      
-      localStorage.setItem("issued_at", data.issued_at.toString());
+      localStorage.setItem("refresh_token_expires_at", data.refresh.expires_in.toString());
 
+      localStorage.setItem("auth_issued_at", data.issue_at.toString());
       // ───────── Przekierowanie ─────────
       navigate("/productivedashboard");
     } catch (err: any) {
