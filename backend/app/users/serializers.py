@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from .models import UserProfile, Task, FetchAllUsers
+from .models import UserProfile, Task
 import base64
 import os
 
