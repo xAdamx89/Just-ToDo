@@ -70,11 +70,6 @@ const sampleFifoItems: FifoItem[] = [
   { id: 3, title: "Przeczytać artykuł o React 19", created_at: "2024-02-13" },
 ];
 
-const sampleSharedUsers: SharedUser[] = [
-  { id: 2, username: "jan_kowalski", email: "jan@example.com", shared_lists: ["Moje Zadania", "LIFO"] },
-  { id: 3, username: "anna_nowak", email: "anna@example.com", shared_lists: ["Moje Zadania"] },
-];
-
 // ── Nav items ──────────────────────────────────────────
 const navItems = [
   { id: "tasks", label: "Moje Zadania", icon: ListTodo },
@@ -300,13 +295,14 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [activeView, setActiveView] = useState("tasks");
   const [fifoItems, setFifoItems] = useState<FifoItem[]>(sampleFifoItems);
-  const [sharedUsers] = useState<SharedUser[]>(sampleSharedUsers);
+  const [sharedUsers, setSharedUsers] = useState<SharedUser[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [taskFilter, setTaskFilter] = useState<TaskFilter>("all");
   const [taskSearch, setTaskSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  
   const API_URL = import.meta.env.VITE_API_URL;
 
   const handleLogout = () => {
@@ -454,6 +450,21 @@ export default function Dashboard() {
     }
   };
 
+  // =========================
+  // FETCH ALL USERS
+  // =========================
+  const fetchAllUsers = async () => {
+    try {
+      const res = await smartFetch(`${API_URL}/api/api/allusers/`);
+      if (!res.ok) throw new Error("Błąd pobierania użytkowników");
+      
+      const data = await res.json();
+      setSharedUsers(data); // Tu dane z Postgresa wpadają do frontendu
+    } catch (err: any) {
+      console.error("Błąd fetchAllUsers:", err);
+    }
+  };
+
     // =========================
   // TOGGLE COMPLETE
   // =========================
@@ -530,8 +541,8 @@ const filteredTasks = useMemo(() => {
 
   useEffect(() => {
     fetchTasks(taskFilter);
+    fetchAllUsers();
     // smartFetch(API_URL, taskFilter)
-
   }, [taskFilter]);
 
   // Theme
@@ -891,6 +902,12 @@ const filteredTasks = useMemo(() => {
                         <div>
                           <p className={cn("font-medium", t.textPrimary)}>{user.username}</p>
                           <p className={cn("text-sm", t.textSecondary)}>{user.email}</p>
+                          <p className={cn("text-sm", t.textSecondary)}>
+                          {/* Sprawdzamy czy email istnieje i nie jest pusty */}
+                          {user.email && user.email.trim() !== "" 
+                            ? user.email 
+                            : "brak e-mail"}
+                        </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
