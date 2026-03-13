@@ -25,7 +25,7 @@ from cryptography.hazmat.primitives.serialization import (
 )
 
 from .models import Task, UserProfile
-from .serializers import LoginSerializer, RegisterSerializer, TaskSerializer, safe_b64encode
+from .serializers import LoginSerializer, RegisterSerializer, TaskSerializer, safe_b64encode, UserSerializer
 
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
@@ -126,7 +126,7 @@ class LoginView(APIView):
         }
 
         return Response(response_data, status=status.HTTP_200_OK)
-    
+
 class RefreshTokenView(APIView):
     permission_classes = [AllowAny]
 
@@ -164,87 +164,87 @@ class MeView(APIView):
             "email": request.user.email
         })
 
-class EncryptedObjectView(APIView):
-    permission_classes = [IsAuthenticated]
+# class EncryptedObjectView(APIView):
+#     permission_classes = [IsAuthenticated]
 
-    def get(self, request, object_type):
-        """
-        Zwraca wszystkie zaszyfrowane obiekty danego typu
-        """
-        objects = EncryptedObject.objects.filter(
-            user=request.user,
-            object_type=object_type
-        )
+#     def get(self, request, object_type):
+#         """
+#         Zwraca wszystkie zaszyfrowane obiekty danego typu
+#         """
+#         objects = EncryptedObject.objects.filter(
+#             user=request.user,
+#             object_type=object_type
+#         )
 
-        return Response([
-            {
-                "id": obj.id,
-                "ciphertext": base64.b64encode(obj.ciphertext).decode(),
-                "created_at": obj.created_at,
-                "updated_at": obj.updated_at
-            }
-            for obj in objects
-        ])
+#         return Response([
+#             {
+#                 "id": obj.id,
+#                 "ciphertext": base64.b64encode(obj.ciphertext).decode(),
+#                 "created_at": obj.created_at,
+#                 "updated_at": obj.updated_at
+#             }
+#             for obj in objects
+#         ])
 
-    def post(self, request, object_type):
-        """
-        Tworzy nowy zaszyfrowany obiekt
-        """
-        ciphertext_b64 = request.data.get("ciphertext")
-        if not ciphertext_b64:
-            return Response({"error": "ciphertext required"}, status=400)
+#     def post(self, request, object_type):
+#         """
+#         Tworzy nowy zaszyfrowany obiekt
+#         """
+#         ciphertext_b64 = request.data.get("ciphertext")
+#         if not ciphertext_b64:
+#             return Response({"error": "ciphertext required"}, status=400)
 
-        ciphertext = base64.b64decode(ciphertext_b64)
+#         ciphertext = base64.b64decode(ciphertext_b64)
 
-        obj = EncryptedObject.objects.create(
-            user=request.user,
-            object_type=object_type,
-            ciphertext=ciphertext
-        )
+#         obj = EncryptedObject.objects.create(
+#             user=request.user,
+#             object_type=object_type,
+#             ciphertext=ciphertext
+#         )
 
-        return Response({"id": obj.id}, status=status.HTTP_201_CREATED)
+#         return Response({"id": obj.id}, status=status.HTTP_201_CREATED)
 
-    def put(self, request, object_type):
-        """
-        Aktualizuje istniejący obiekt
-        """
-        obj_id = request.data.get("id")
-        ciphertext_b64 = request.data.get("ciphertext")
+#     def put(self, request, object_type):
+#         """
+#         Aktualizuje istniejący obiekt
+#         """
+#         obj_id = request.data.get("id")
+#         ciphertext_b64 = request.data.get("ciphertext")
 
-        if not obj_id or not ciphertext_b64:
-            return Response({"error": "id and ciphertext required"}, status=400)
+#         if not obj_id or not ciphertext_b64:
+#             return Response({"error": "id and ciphertext required"}, status=400)
 
-        try:
-            obj = EncryptedObject.objects.get(
-                id=obj_id,
-                user=request.user,
-                object_type=object_type
-            )
-        except EncryptedObject.DoesNotExist:
-            return Response({"error": "not found"}, status=404)
+#         try:
+#             obj = EncryptedObject.objects.get(
+#                 id=obj_id,
+#                 user=request.user,
+#                 object_type=object_type
+#             )
+#         except EncryptedObject.DoesNotExist:
+#             return Response({"error": "not found"}, status=404)
 
-        obj.ciphertext = base64.b64decode(ciphertext_b64)
-        obj.save()
+#         obj.ciphertext = base64.b64decode(ciphertext_b64)
+#         obj.save()
 
-        return Response({"status": "updated"}, status=200)
+#         return Response({"status": "updated"}, status=200)
 
-    def delete(self, request, object_type):
-        """
-        Usuwa obiekt
-        """
-        obj_id = request.data.get("id")
+#     def delete(self, request, object_type):
+#         """
+#         Usuwa obiekt
+#         """
+#         obj_id = request.data.get("id")
 
-        try:
-            obj = EncryptedObject.objects.get(
-                id=obj_id,
-                user=request.user,
-                object_type=object_type
-            )
-        except EncryptedObject.DoesNotExist:
-            return Response({"error": "not found"}, status=404)
+#         try:
+#             obj = EncryptedObject.objects.get(
+#                 id=obj_id,
+#                 user=request.user,
+#                 object_type=object_type
+#             )
+#         except EncryptedObject.DoesNotExist:
+#             return Response({"error": "not found"}, status=404)
 
-        obj.delete()
-        return Response({"status": "deleted"}, status=200)
+#         obj.delete()
+#         return Response({"status": "deleted"}, status=200)
 
 class TaskView(APIView):
     permission_classes = [IsAuthenticated]
@@ -328,3 +328,15 @@ class TaskView(APIView):
 
         task.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+class FetchAllUsers(APIView):
+    def get(self, request):
+        # Pobieramy wszystkich userów z db -> typ: QuerySet
+        users = User.objects.all()
+
+        # Zamieniamy QuerySet na format JSON (Za pomocą serializacji)
+        users_serialized = UserSerializer(users, many=True)
+
+        # Zwracamy odpowiedź
+        return Response(users_serialized.data)
+
