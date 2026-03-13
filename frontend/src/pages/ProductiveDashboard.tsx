@@ -399,7 +399,6 @@ export default function Dashboard() {
   // =========================
   const fetchTasks = async (filter: TaskFilter = taskFilter) => {
     setLoading(true);
-    // let url = `${API_URL}/api/api/tasks/`;
 
     let url = `${API_URL}/api/api/tasks/`;
     const params = new URLSearchParams();
@@ -411,30 +410,9 @@ export default function Dashboard() {
 
     const finalUrl = params.toString() ? `${url}?${params.toString()}` : url;
 
-    // if (filter === "pending") url += "?status=pending";
-    // if (filter === "completed") url += "?status=completed";
-    // if (filter === "important") url += "?important=true";
-    // if (filter === "critical") url += "?priority=critical";
-
     try {
-      // const res = await fetch(url, {
-      //   headers: { Authorization: `Bearer ${getToken()}` },
-      // });
-
       const res = await smartFetch(finalUrl);
       if (!res.ok) throw new Error("Błąd pobierania danych z serwera");
-
-      // if (res.status === 401) {
-      //   refreshAccessToken().then((newToken) => {
-      //     if (!newToken) {
-      //       localStorage.removeItem("access_token");
-      //       localStorage.removeItem("refresh_token");
-      //       navigate("/", { replace: true });
-      //     }
-      //   });
-      //   return;
-      // }
-      // else if (!res.ok) throw new Error("Błąd pobierania tasków");
       
       const data = await res.json();
       setTasks(data);
@@ -533,12 +511,6 @@ const filteredTasks = useMemo(() => {
       important: tasks.filter((t) => t.priority === "critical").length,
     };
   }, [tasks]);
-
-    // AUTO LOAD
-  // =========================
-  // useEffect(() => {
-  //   if (getToken()) fetchTasks();
-  // }, [getToken()]);
 
   useEffect(() => {
     fetchTasks(taskFilter);
@@ -800,6 +772,11 @@ const filteredTasks = useMemo(() => {
                                     {new Date(task.deadline).toLocaleDateString("pl-PL")}
                                   </span>
                                 )}
+                                {/* DODANO: Data utworzenia */}
+                                <span className={cn("flex items-center gap-1 text-xs", t.textMuted)}>
+                                  <Plus className="w-3 h-3" /> {/* Możesz użyć ikony Plus lub History */}
+                                  Utworzono: {new Date(task.created_at).toLocaleDateString("pl-PL")}
+                                </span>
                               </div>
                             </div>
 

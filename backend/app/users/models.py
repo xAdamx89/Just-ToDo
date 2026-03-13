@@ -40,7 +40,7 @@ class Task(models.Model):
         ("pending", "Pending"),
         ("in_progress", "In Progress"),
         ("completed", "Completed"),
-        ("cancelled", "Cancelled"),
+        # ("cancelled", "Cancelled"),
     ]
 
     user = models.ForeignKey(
