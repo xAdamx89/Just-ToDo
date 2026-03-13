@@ -903,13 +903,13 @@ const filteredTasks = useMemo(() => {
                         {(user.shared_lists || []).map((list) => (
                           <span key={list} className={cn("px-2 py-1 text-xs rounded-lg", t.tagBg)}>{list}</span>
                         ))}
-                        {(!user.shared_lists || user.shared_lists.length === 0) && (
+                        {/* {(!user.shared_lists || user.shared_lists.length === 0) && (
                           <span className={cn("text-xs italic", t.textMuted)}>Brak list</span>
-                        )}
+                        )} */}
                       </div>
-                      <button className={cn("p-2 transition-colors hover:text-red-400", t.textMuted)}>
+                      {/* <button className={cn("p-2 transition-colors hover:text-red-400", t.textMuted)}>
                         <Trash2 className="w-4 h-4" />
-                      </button>
+                      </button> */}
                     </div>
                   </motion.div>
                 ))}
