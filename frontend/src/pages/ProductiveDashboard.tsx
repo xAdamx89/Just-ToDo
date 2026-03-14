@@ -28,6 +28,8 @@ import { Sidebar } from "../components/Dashboard/SideBar.tsx";
 import { FifoView } from "../components/Dashboard/FIFOView.tsx";
 import { TasksView } from "../components/Dashboard/Tasks/TasksView.tsx";
 import { MainContentHeaderView } from "../components/Dashboard/MainContentHeaderView.tsx";
+import { SharingView } from "../components/Dashboard/SharedUsersView.tsx";
+import { SettingsView } from "../components/Dashboard/SettingsView.tsx";
 
 // ── Types ──────────────────────────────────────────────
 type Theme = "dark" | "light";
@@ -574,12 +576,13 @@ const filteredTasks = useMemo(() => {
   // ── Render ────────────────────────────────────────────
   return (
     <div className={cn("min-h-screen flex", t.mainBg)}>
+    {/* ─── Tło + animacje ─── */}
     <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <motion.div animate={{ scale: [1, 1.2, 1], rotate: [0, 90, 0] }} transition={{ duration: 25, repeat: Infinity, ease: "linear" }} className={cn("absolute -top-40 -right-40 w-96 h-96 rounded-full blur-3xl", d ? "bg-orange-500/8" : "bg-amber-300/20")} />
         <motion.div animate={{ scale: [1.2, 1, 1.2], rotate: [90, 0, 90] }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }} className={cn("absolute -bottom-40 -left-40 w-96 h-96 rounded-full blur-3xl", d ? "bg-amber-500/8" : "bg-orange-200/20")} />
         <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 18, repeat: Infinity, ease: "linear" }} className={cn("absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-3xl", d ? "bg-red-900/5" : "bg-yellow-200/15")} />
       </div>
-            
+
       {/* ─── Sidebar jako osobny komponent ─── */}
       <Sidebar 
         sidebarOpen={sidebarOpen}
@@ -597,17 +600,17 @@ const filteredTasks = useMemo(() => {
       {/* ─── Main Content ─── */}
       <main className="flex-1 h-screen overflow-hidden relative z-10 flex flex-col">
         <div className="p-6 md:p-8 max-w-6xl mx-auto w-full flex flex-col h-full">
+          
           {/* Header */}
-
-        {/* ─── Tło + animacje ─── */}
-        <MainContentHeaderView 
-              activeView={activeView} 
-              navItems={navItems} 
-              t={t} 
-            />
+          <MainContentHeaderView 
+                activeView={activeView} 
+                navItems={navItems} 
+                t={t} 
+              />
 
           {activeView === "tasks" && (
             <TasksView 
+              // Podstawowe propsy (te już masz)
               loading={loading}
               stats={stats}
               t={t}
@@ -624,8 +627,42 @@ const filteredTasks = useMemo(() => {
               deleteTask={deleteTask}
               prepareEditTask={prepareEditTask}
               openAddForm={openAddForm}
+
+              // NOWE PROPSY (Dopisujemy to, czego brakuje w błędzie)
+              showTaskForm={showTaskForm}
+              setShowTaskForm={setShowTaskForm}
+              editingTask={editingTask}
+              newTitle={newTitle}
+              setNewTitle={setNewTitle}
+              newDesc={newDesc}
+              setNewDesc={setNewDesc}
+              newPriority={newPriority}
+              setNewPriority={setNewPriority}
+              newDeadline={newDeadline}
+              setNewDeadline={setNewDeadline}
+              resetForm={resetForm}
+              handleSaveTask={() => {
+                if (editingTask) {
+                  updateTask(editingTask.id, { 
+                    title: newTitle, 
+                    description: newDesc, 
+                    priority: newPriority, 
+                    deadline: newDeadline || null 
+                  });
+                } else {
+                  addTask({ 
+                    title: newTitle, 
+                    description: newDesc, 
+                    priority: newPriority, 
+                    status: "pending", 
+                    is_important: false, 
+                    deadline: newDeadline || null 
+                  });
+                }
+              }}
             />
           )}
+          
           {/* ═══════ FIFO VIEW ═══════ */}
           {activeView === "fifo" && (
             <FifoView 
@@ -639,155 +676,21 @@ const filteredTasks = useMemo(() => {
             />
           )}
 
-          {/* shared users */}
           {activeView === "sharing" && (
-            <div className={cn("p-6 rounded-2xl border", t.cardBg)}>
-              <h3 className={cn("text-lg font-semibold mb-4", t.textPrimary)}>Użytkownicy z dostępem</h3>
-              <div className="space-y-3">
-                {sharedUsers.map((user) => (
-                  <motion.div key={user.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={cn("flex items-center justify-between p-4 rounded-xl border transition-all", t.cardBgAlt, t.cardHover)}>
-                    <div className="flex items-center gap-4">
-                      <div className={cn("w-10 h-10 rounded-full flex items-center justify-center border flex-shrink-0", t.avatarBg)}>
-                        <span className={cn("font-semibold text-sm", t.avatarText)}>
-                          {(user.username || "??").slice(0, 2).toUpperCase()}
-                        </span>
-                      </div>
-                      <div>
-                        <p className={cn("font-medium", t.textPrimary)}>{user.username}</p>
-                        <p className={cn("text-sm", t.textSecondary)}>
-                          {/* Poprawka: wyświetlanie "brak e-mail" */}
-                          {user.email && user.email.trim() !== "" 
-                            ? user.email 
-                            : <span className="italic opacity-50 text-xs">brak e-mail</span>}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex gap-2 flex-wrap">
-                        {/* KLUCZOWA POPRAWKA: user.shared_lists?.map oraz || [] */}
-                        {(user.shared_lists || []).map((list) => (
-                          <span key={list} className={cn("px-2 py-1 text-xs rounded-lg", t.tagBg)}>{list}</span>
-                        ))}
-                        {/* {(!user.shared_lists || user.shared_lists.length === 0) && (
-                          <span className={cn("text-xs italic", t.textMuted)}>Brak list</span>
-                        )} */}
-                      </div>
-                      {/* <button className={cn("p-2 transition-colors hover:text-red-400", t.textMuted)}>
-                        <Trash2 className="w-4 h-4" />
-                      </button> */}
-                    </div>
-                  </motion.div>
-                ))}
-                {sharedUsers.length === 0 && (
-                  <div className="text-center py-12">
-                    <Users className={cn("w-14 h-14 mx-auto mb-4", t.textMuted)} />
-                    <p className={t.textSecondary}>Nikt nie ma dostępu do Twoich list</p>
-                    <p className={cn("text-sm", t.textMuted)}>Zaproś innych użytkowników powyżej</p>
-                  </div>
-                )}
-              </div>
-            </div>
+            <SharingView 
+              sharedUsers={sharedUsers} 
+              t={t} 
+            />
           )}
-          
-          {/* ═══════ SETTINGS VIEW ═══════ */}
+
           {activeView === "settings" && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 max-w-2xl">
-              {/* profile */}
-              <div className={cn("p-6 rounded-2xl border", t.cardBg)}>
-                <h3 className={cn("text-lg font-semibold mb-4", t.textPrimary)}>Ustawienia profilu</h3>
-                <div className="space-y-4">
-                  {[
-                    { label: "Nazwa użytkownika", value: user?.username ?? "Brak nazwy użytkownika", type: "text" },
-                    { label: "Email", value: user?.email ?? "Brak email w bazie danych", type: "email" },
-                    { label: "Imię", value: "", type: "text" },
-                    { label: "Nazwisko", value: "", type: "text" },
-                  ].map((field) => (
-                    <div key={field.label}>
-                      <label className={cn("block text-sm mb-2", t.textSecondary)}>{field.label}</label>
-                      <input type={field.type} defaultValue={field.value} className={cn("w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all", t.inputBg)} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* notifications */}
-              <div className={cn("p-6 rounded-2xl border", t.cardBg)}>
-                <h3 className={cn("text-lg font-semibold mb-4", t.textPrimary)}>Powiadomienia</h3>
-                <div className="space-y-4">
-                  {["Powiadomienia email", "Przypomnienia o zadaniach"].map((label) => (
-                    <label key={label} className="flex items-center justify-between cursor-pointer">
-                      <span className={t.textPrimary}>{label}</span>
-                      <div className="relative">
-                        <input type="checkbox" defaultChecked className="sr-only peer" />
-                        <div className={cn("w-11 h-6 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all", t.toggleTrack, t.toggleChecked)} />
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className={cn("w-full py-3 rounded-xl font-medium transition-all", t.btnPrimary)}>
-                Zapisz zmiany
-              </motion.button>
-            </motion.div>
+            <SettingsView 
+              user={user} 
+              t={t} 
+            />
           )}
         </div>
       </main>
-
-      {/* ─── Task Form Modal ─── */}
-      <AnimatePresence>
-        {showTaskForm && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className={cn("fixed inset-0 flex items-center justify-center z-50 p-4", t.modalOverlay)} onClick={() => setShowTaskForm(false)}>
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={(e) => e.stopPropagation()} className={cn("p-6 rounded-2xl border w-full max-w-md shadow-2xl", t.modalBg)}>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className={cn("text-xl font-semibold", t.textPrimary)}>{editingTask ? "Edytuj zadanie" : "Nowe zadanie"}</h2>
-                <button onClick={() => setShowTaskForm(false)} className={cn("p-2 transition-colors", t.textSecondary, "hover:text-red-400")}>
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className={cn("block text-sm mb-2", t.textSecondary)}>Tytuł</label>
-                  <input type="text" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Tytuł zadania..." className={cn("w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all", t.inputBg)} />
-                </div>
-                <div>
-                  <label className={cn("block text-sm mb-2", t.textSecondary)}>Opis</label>
-                  <textarea value={newDesc} onChange={(e) => setNewDesc(e.target.value)} placeholder="Opis zadania (opcjonalne)..." rows={3} className={cn("w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/50 resize-none transition-all", t.inputBg)} />
-                </div>
-                <div>
-                  <label className={cn("block text-sm mb-2", t.textSecondary)}>Priorytet</label>
-                  <div className="grid grid-cols-4 gap-2">
-                    {(["low", "medium", "high", "critical"] as const).map((p) => (
-                      <button key={p} onClick={() => setNewPriority(p)} className={cn("px-3 py-2 rounded-lg text-sm font-medium border transition-all", newPriority === p ? (d ? priorityConfig[p].dark : priorityConfig[p].light) : cn(t.inputBg, "hover:opacity-80"))}>
-                        {priorityConfig[p].label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <label className={cn("block text-sm mb-2", t.textSecondary)}>Termin (opcjonalne)</label>
-                  <input type="date" value={newDeadline} onChange={(e) => setNewDeadline(e.target.value)} className={cn("w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all", t.inputBg)} />
-                </div>
-              </div>
-
-              <div className="flex gap-3 mt-6">
-                <button onClick={() => setShowTaskForm(false)} className={cn("flex-1 px-4 py-3 rounded-xl font-medium transition-all", t.btnSecondary)}>Anuluj</button>
-                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => {
-                  if (editingTask) {
-                    updateTask(editingTask.id, { title: newTitle, description: newDesc, priority: newPriority, deadline: newDeadline || null });
-                  } else {
-                    addTask({ title: newTitle, description: newDesc, priority: newPriority, status: "pending", is_important: false, deadline: newDeadline || null });
-                  }
-                  resetForm();
-                }} className={cn("flex-1 px-4 py-3 rounded-xl font-medium transition-all", t.btnPrimary)}>
-                  {editingTask ? "Zapisz" : "Dodaj"}
-                </motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
