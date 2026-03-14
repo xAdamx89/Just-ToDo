@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { cn } from "../utils/cn";
 import { useMemo } from "react";
-import { Sidebar } from "@/components/Dashboard/SideBar";
+import { Sidebar } from "../components/Dashboard/SideBar.tsx";
 
 // ── Types ──────────────────────────────────────────────
 type Theme = "dark" | "light";
