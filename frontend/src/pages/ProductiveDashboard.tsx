@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { cn } from "../utils/cn";
 import { useMemo } from "react";
+import { Sidebar } from "@/components/Dashboard/SideBar";
 
 // ── Types ──────────────────────────────────────────────
 type Theme = "dark" | "light";
@@ -556,98 +557,26 @@ const filteredTasks = useMemo(() => {
   // ── Render ────────────────────────────────────────────
   return (
     <div className={cn("min-h-screen flex", t.mainBg)}>
+            {/* ─── Sidebar jako osobny komponent ─── */}
+            <Sidebar 
+              sidebarOpen={sidebarOpen}
+              setSidebarOpen={setSidebarOpen}
+              user={user}
+              activeView={activeView}
+              setActiveView={setActiveView}
+              navItems={navItems}
+              handleLogout={handleLogout}
+              toggleTheme={toggleTheme}
+              theme={theme}
+              t={t}
+            />
+            
       {/* ─── Animated BG orbs (same as Home) ─── */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <motion.div animate={{ scale: [1, 1.2, 1], rotate: [0, 90, 0] }} transition={{ duration: 25, repeat: Infinity, ease: "linear" }} className={cn("absolute -top-40 -right-40 w-96 h-96 rounded-full blur-3xl", d ? "bg-orange-500/8" : "bg-amber-300/20")} />
         <motion.div animate={{ scale: [1.2, 1, 1.2], rotate: [90, 0, 90] }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }} className={cn("absolute -bottom-40 -left-40 w-96 h-96 rounded-full blur-3xl", d ? "bg-amber-500/8" : "bg-orange-200/20")} />
         <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 18, repeat: Infinity, ease: "linear" }} className={cn("absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-3xl", d ? "bg-red-900/5" : "bg-yellow-200/15")} />
       </div>
-
-      {/* ─── Sidebar ─── */}
-      <motion.aside initial={false} animate={{ width: sidebarOpen ? 280 : 80 }} className={cn("backdrop-blur-xl border-r flex flex-col relative z-20", t.sidebarBg)}>
-        {/* toggle */}
-        <button onClick={() => setSidebarOpen(!sidebarOpen)} className="absolute -right-3 top-6 w-6 h-6 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg z-10 hover:scale-110 transition-transform">
-          <ChevronRight className={cn("w-4 h-4 text-white transition-transform", !sidebarOpen && "rotate-180")} />
-        </button>
-
-        {/* logo */}
-        <div className={cn("p-6 border-b", t.divider)}>
-          <motion.div animate={{ justifyContent: sidebarOpen ? "flex-start" : "center" }} className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/25 flex-shrink-0">
-              <CheckCircle2 className="w-6 h-6 text-white" />
-            </div>
-            <AnimatePresence>
-              {sidebarOpen && (
-                <motion.div initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: "auto" }} exit={{ opacity: 0, width: 0 }} className="overflow-hidden">
-                  <h1 className={cn("text-xl font-bold whitespace-nowrap", t.textPrimary)}>Just ToDo</h1>
-                  <p className={cn("text-xs whitespace-nowrap", t.textSecondary)}>Twój inteligentny organizer</p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
-        </div>
-
-        {/* user info */}
-        <div className={cn("p-4 border-b", t.divider)}>
-          <div className="flex items-center gap-3">
-            <div className={cn("w-10 h-10 rounded-full flex items-center justify-center border flex-shrink-0", t.avatarBg)}>
-              <span className={cn("font-semibold text-sm", t.avatarText)}>JD</span>
-            </div>
-            <AnimatePresence>
-              {sidebarOpen && (
-                <motion.div initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: "auto" }} exit={{ opacity: 0, width: 0 }} className="overflow-hidden flex-1">
-                  <p className={cn("text-sm font-medium truncate", t.textPrimary)}>{user?.username ?? "Brak nazwy użytkownika"}</p>
-                  <p className={cn("text-xs truncate", t.textSecondary)}>{user?.email || "Brak email w bazie danych"}</p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-
-        {/* theme toggle */}
-        <div className={cn("p-4 border-b", t.divider)}>
-          <motion.button onClick={toggleTheme} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className={cn("w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl transition-all", d ? "bg-amber-800/20 text-amber-300/80 hover:bg-amber-800/30" : "bg-amber-100/60 text-amber-700 hover:bg-amber-200/60")}>
-            {d ? <Sun className="w-4 h-4 text-amber-400 flex-shrink-0" /> : <Moon className="w-4 h-4 text-amber-600 flex-shrink-0" />}
-            <AnimatePresence>
-              {sidebarOpen && (
-                <motion.span initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: "auto" }} exit={{ opacity: 0, width: 0 }} className="text-sm font-medium whitespace-nowrap overflow-hidden">
-                  {d ? "Tryb jasny" : "Tryb ciemny"}
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </motion.button>
-        </div>
-
-        {/* navigation */}
-        <nav className="flex-1 p-4 space-y-2">
-          {navItems.map((item) => (
-            <motion.button key={item.id} onClick={() => setActiveView(item.id)} whileHover={{ x: 4 }} whileTap={{ scale: 0.98 }} className={cn("w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all", activeView === item.id ? t.navActive : t.navInactive)}>
-              <item.icon className="w-5 h-5 flex-shrink-0" />
-              <AnimatePresence>
-                {sidebarOpen && (
-                  <motion.span initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: "auto" }} exit={{ opacity: 0, width: 0 }} className="text-sm font-medium whitespace-nowrap overflow-hidden">
-                    {item.label}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </motion.button>
-          ))}
-        </nav>
-
-        {/* logout */}
-        <div className={cn("p-4 border-t", t.divider)}>
-          <motion.button whileHover={{ x: 4 }} onClick={handleLogout} className={cn("w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all", t.navInactive)}>
-            <LogOut className="w-5 h-5 flex-shrink-0" />
-            <AnimatePresence>
-              {sidebarOpen && (
-                <motion.span initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: "auto" }} exit={{ opacity: 0, width: 0 }} className="text-sm font-medium whitespace-nowrap overflow-hidden">
-                  Wyloguj się
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </motion.button>
-        </div>
-      </motion.aside>
 
       {/* ─── Main Content ─── */}
       <main className="flex-1 h-screen overflow-hidden relative z-10 flex flex-col">
