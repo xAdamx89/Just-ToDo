@@ -574,13 +574,12 @@ const filteredTasks = useMemo(() => {
   // ── Render ────────────────────────────────────────────
   return (
     <div className={cn("min-h-screen flex", t.mainBg)}>
-      {/* ─── Tło + animacje ─── */}
-      <MainContentHeaderView 
-            activeView={activeView} 
-            navItems={navItems} 
-            t={t} 
-          />
-      
+    <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <motion.div animate={{ scale: [1, 1.2, 1], rotate: [0, 90, 0] }} transition={{ duration: 25, repeat: Infinity, ease: "linear" }} className={cn("absolute -top-40 -right-40 w-96 h-96 rounded-full blur-3xl", d ? "bg-orange-500/8" : "bg-amber-300/20")} />
+        <motion.div animate={{ scale: [1.2, 1, 1.2], rotate: [90, 0, 90] }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }} className={cn("absolute -bottom-40 -left-40 w-96 h-96 rounded-full blur-3xl", d ? "bg-amber-500/8" : "bg-orange-200/20")} />
+        <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 18, repeat: Infinity, ease: "linear" }} className={cn("absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-3xl", d ? "bg-red-900/5" : "bg-yellow-200/15")} />
+      </div>
+            
       {/* ─── Sidebar jako osobny komponent ─── */}
       <Sidebar 
         sidebarOpen={sidebarOpen}
@@ -599,17 +598,13 @@ const filteredTasks = useMemo(() => {
       <main className="flex-1 h-screen overflow-hidden relative z-10 flex flex-col">
         <div className="p-6 md:p-8 max-w-6xl mx-auto w-full flex flex-col h-full">
           {/* Header */}
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex-shrink-0 mb-8">
-            <h1 className={cn("text-3xl font-bold mb-1", t.textPrimary)}>
-              {navItems.find((n) => n.id === activeView)?.label}
-            </h1>
-            <p className={t.textSecondary}>
-              {activeView === "tasks" && "Zarządzaj swoimi zadaniami"}
-              {activeView === "fifo" && "Metoda FIFO — Pierwszy dodany, pierwszy do wykonania"}
-              {activeView === "sharing" && "Współdziel swoje listy z innymi"}
-              {activeView === "settings" && "Dostosuj aplikację do swoich potrzeb"}
-            </p>
-          </motion.div>
+
+        {/* ─── Tło + animacje ─── */}
+        <MainContentHeaderView 
+              activeView={activeView} 
+              navItems={navItems} 
+              t={t} 
+            />
 
           {activeView === "tasks" && (
             <TasksView 
