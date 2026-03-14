@@ -27,6 +27,7 @@ import { useMemo } from "react";
 import { Sidebar } from "../components/Dashboard/SideBar.tsx";
 import { FifoView } from "../components/Dashboard/FIFOView.tsx";
 import { TasksView } from "../components/Dashboard/Tasks/TasksView.tsx";
+import { MainContentHeaderView } from "../components/Dashboard/MainContentHeaderView.tsx";
 
 // ── Types ──────────────────────────────────────────────
 type Theme = "dark" | "light";
@@ -573,27 +574,27 @@ const filteredTasks = useMemo(() => {
   // ── Render ────────────────────────────────────────────
   return (
     <div className={cn("min-h-screen flex", t.mainBg)}>
-            {/* ─── Sidebar jako osobny komponent ─── */}
-            <Sidebar 
-              sidebarOpen={sidebarOpen}
-              setSidebarOpen={setSidebarOpen}
-              user={user}
-              activeView={activeView}
-              setActiveView={setActiveView}
-              navItems={navItems}
-              handleLogout={handleLogout}
-              toggleTheme={toggleTheme}
-              theme={theme}
-              t={t}
-            />
+      {/* ─── Tło + animacje ─── */}
+      <MainContentHeaderView 
+            activeView={activeView} 
+            navItems={navItems} 
+            t={t} 
+          />
+      
+      {/* ─── Sidebar jako osobny komponent ─── */}
+      <Sidebar 
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        user={user}
+        activeView={activeView}
+        setActiveView={setActiveView}
+        navItems={navItems}
+        handleLogout={handleLogout}
+        toggleTheme={toggleTheme}
+        theme={theme}
+        t={t}
+      />
             
-      {/* ─── Animated BG orbs (same as Home) ─── */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <motion.div animate={{ scale: [1, 1.2, 1], rotate: [0, 90, 0] }} transition={{ duration: 25, repeat: Infinity, ease: "linear" }} className={cn("absolute -top-40 -right-40 w-96 h-96 rounded-full blur-3xl", d ? "bg-orange-500/8" : "bg-amber-300/20")} />
-        <motion.div animate={{ scale: [1.2, 1, 1.2], rotate: [90, 0, 90] }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }} className={cn("absolute -bottom-40 -left-40 w-96 h-96 rounded-full blur-3xl", d ? "bg-amber-500/8" : "bg-orange-200/20")} />
-        <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 18, repeat: Infinity, ease: "linear" }} className={cn("absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-3xl", d ? "bg-red-900/5" : "bg-yellow-200/15")} />
-      </div>
-
       {/* ─── Main Content ─── */}
       <main className="flex-1 h-screen overflow-hidden relative z-10 flex flex-col">
         <div className="p-6 md:p-8 max-w-6xl mx-auto w-full flex flex-col h-full">
