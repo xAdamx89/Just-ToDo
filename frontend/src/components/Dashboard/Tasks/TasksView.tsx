@@ -133,7 +133,7 @@ return (
                     {p === "low" && "Niski"}
                     {p === "medium" && "Średni"}
                     {p === "high" && "Wysoki"}
-                    {p === "critical" && "Krytyczny 🔥"}
+                    {p === "critical" && "Krytyczny"}
                   </button>
                 ))}
               </div>

@@ -36,8 +36,7 @@ interface Task {
   created_at: string;
 }
 
-type TaskFilter = "all" | "pending" | "completed" | "critical";
-type StatusTypeFilter = "critical" | "high" | "medium" | "low";
+type TaskFilter = "all" | "pending" | "completed" | "critical" | "high" | "medium" | "low";
 
 interface FifoItem {
   id: number;
@@ -474,10 +473,18 @@ const filteredTasks = useMemo(() => {
   if (taskFilter !== "all") {
     result = result.filter((t) => {
       switch (taskFilter) {
-        case "pending": return t.status === "pending";
-        case "completed": return t.status === "completed";
-        case "critical": return t.priority === "critical";
-        default: return true;
+        case "pending": 
+          return t.status === "pending";
+        case "completed": 
+          return t.status === "completed";
+        // Tutaj obsługujemy wszystkie priorytety jednym rzutem
+        case "low":
+        case "medium":
+        case "high":
+        case "critical":
+          return t.priority === taskFilter;
+        default: 
+          return true;
       }
     });
   }
