@@ -64,7 +64,7 @@ export function TasksView({
   handleSaveTask, resetForm
 }: TasksViewProps) {
 return (
-    <> {/* <--- KLUCZOWE: Otwarcie fragmentu */}
+    <> 
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -137,95 +137,91 @@ return (
 
         {/* Task list */}
         <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar min-h-0">
-          {loading ? (
-            <LoadingSpinner message="Pobieram Twoje zadania..." />
-          ) : (
-            <div className="space-y-3 pb-20">
-              <AnimatePresence mode="popLayout">
-                {filteredTasks.map((task, i) => (
-                  <motion.div
-                    key={task.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, x: -100 }}
-                    transition={{ delay: i * 0.04 }}
-                    className={cn(
-                      "p-4 rounded-2xl border group transition-all",
-                      t.cardBg,
-                      t.cardHover,
-                      task.is_important && t.taskImportantRing,
-                      task.status === "completed" && t.taskCompleted
-                    )}
-                  >
-                    <div className="flex items-start gap-4">
-                      <motion.button
-                        whileHover={{ scale: 1.15 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => toggleComplete(task)}
-                        className={cn(
-                          "w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all",
-                          task.status === "completed" ? "bg-emerald-500 border-emerald-500" : t.checkboxIdle
-                        )}
-                      >
-                        {task.status === "completed" && <CheckCircle2 className="w-4 h-4 text-white" />}
-                      </motion.button>
+          <div className="space-y-3 pb-20">
+            <AnimatePresence mode="popLayout">
+              {filteredTasks.map((task, i) => (
+                <motion.div
+                  key={task.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, x: -100 }}
+                  transition={{ delay: i * 0.04 }}
+                  className={cn(
+                    "p-4 rounded-2xl border group transition-all",
+                    t.cardBg,
+                    t.cardHover,
+                    task.is_important && t.taskImportantRing,
+                    task.status === "completed" && t.taskCompleted
+                  )}
+                >
+                  <div className="flex items-start gap-4">
+                    <motion.button
+                      whileHover={{ scale: 1.15 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => toggleComplete(task)}
+                      className={cn(
+                        "w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all",
+                        task.status === "completed" ? "bg-emerald-500 border-emerald-500" : t.checkboxIdle
+                      )}
+                    >
+                      {task.status === "completed" && <CheckCircle2 className="w-4 h-4 text-white" />}
+                    </motion.button>
 
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className={cn("font-medium truncate", task.status === "completed" ? t.taskCompletedText : t.textPrimary)}>
-                            {task.title}
-                          </h3>
-                          {task.is_important && <Star className={cn("w-4 h-4 fill-amber-400 flex-shrink-0", d ? "text-amber-400" : "text-amber-500")} />}
-                        </div>
-                        {task.description && <p className={cn("text-sm mb-2 truncate", t.textSecondary)}>{task.description}</p>}
-
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className={cn("px-2 py-0.5 rounded text-xs font-medium border", d ? priorityConfig[task.priority].dark : priorityConfig[task.priority].light)}>
-                            {priorityConfig[task.priority].label}
-                          </span>
-                          <span className={cn("px-2 py-0.5 rounded text-xs font-medium", d ? statusConfig[task.status].dark : statusConfig[task.status].light)}>
-                            {statusConfig[task.status].label}
-                          </span>
-                          {task.deadline && (
-                            <span className={cn("flex items-center gap-1 text-xs", t.textMuted)}>
-                              <Calendar className="w-3 h-3" />
-                              {new Date(task.deadline).toLocaleDateString("pl-PL")}
-                            </span>
-                          )}
-                          <span className={cn("flex items-center gap-1 text-xs", t.textMuted)}>
-                            <Plus className="w-3 h-3" />
-                            Utworzono: {new Date(task.created_at).toLocaleDateString("pl-PL")}
-                          </span>
-                        </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className={cn("font-medium truncate", task.status === "completed" ? t.taskCompletedText : t.textPrimary)}>
+                          {task.title}
+                        </h3>
+                        {task.is_important && <Star className={cn("w-4 h-4 fill-amber-400 flex-shrink-0", d ? "text-amber-400" : "text-amber-500")} />}
                       </div>
+                      {task.description && <p className={cn("text-sm mb-2 truncate", t.textSecondary)}>{task.description}</p>}
 
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => toggleImportant(task)} className={cn("p-2 transition-colors", t.textSecondary, "hover:text-amber-400")}>
-                          <Star className={cn("w-4 h-4", task.is_important && "fill-amber-400 text-amber-400")} />
-                        </button>
-                        <button
-                          onClick={() => prepareEditTask(task)}
-                          className={cn("p-2 transition-colors", t.textSecondary, "hover:text-blue-400")}
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => deleteTask(task.id)} className={cn("p-2 transition-colors", t.textSecondary, "hover:text-red-400")}>
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className={cn("px-2 py-0.5 rounded text-xs font-medium border", d ? priorityConfig[task.priority].dark : priorityConfig[task.priority].light)}>
+                          {priorityConfig[task.priority].label}
+                        </span>
+                        <span className={cn("px-2 py-0.5 rounded text-xs font-medium", d ? statusConfig[task.status].dark : statusConfig[task.status].light)}>
+                          {statusConfig[task.status].label}
+                        </span>
+                        {task.deadline && (
+                          <span className={cn("flex items-center gap-1 text-xs", t.textMuted)}>
+                            <Calendar className="w-3 h-3" />
+                            {new Date(task.deadline).toLocaleDateString("pl-PL")}
+                          </span>
+                        )}
+                        <span className={cn("flex items-center gap-1 text-xs", t.textMuted)}>
+                          <Plus className="w-3 h-3" />
+                          Utworzono: {new Date(task.created_at).toLocaleDateString("pl-PL")}
+                        </span>
                       </div>
                     </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
 
-              {!loading && filteredTasks.length === 0 && (
-                <div className="text-center py-16">
-                  <ListTodo className={cn("w-14 h-14 mx-auto mb-4", t.textMuted)} />
-                  <p className={t.textSecondary}>Brak zadań do wyświetlenia</p>
-                </div>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => toggleImportant(task)} className={cn("p-2 transition-colors", t.textSecondary, "hover:text-amber-400")}>
+                        <Star className={cn("w-4 h-4", task.is_important && "fill-amber-400 text-amber-400")} />
+                      </button>
+                      <button
+                        onClick={() => prepareEditTask(task)}
+                        className={cn("p-2 transition-colors", t.textSecondary, "hover:text-blue-400")}
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => deleteTask(task.id)} className={cn("p-2 transition-colors", t.textSecondary, "hover:text-red-400")}>
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+
+            {filteredTasks.length === 0 && (
+              <div className="text-center py-16">
+                <ListTodo className={cn("w-14 h-14 mx-auto mb-4", t.textMuted)} />
+                <p className={t.textSecondary}>Brak zadań do wyświetlenia</p>
+              </div>
               )}
             </div>
-          )}
         </div>
       </motion.div>
 

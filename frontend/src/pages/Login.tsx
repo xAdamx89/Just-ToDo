@@ -84,10 +84,11 @@ function Login() {
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-400" />
                 <input
                   type="text"
+                  name="UserName"
                   value={username}
                   onChange={(e) => setUserName(e.target.value)}
                   className="w-full pl-12 pr-4 py-3 bg-amber-950/50 border border-amber-700/50 rounded-xl text-amber-100 placeholder-amber-400/50 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
-                  placeholder="eruddy22"
+                  placeholder="User"
                   required
                 />
               </div>
