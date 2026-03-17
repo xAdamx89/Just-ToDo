@@ -1,26 +1,11 @@
-import { LoadingSpinner } from "../components/LoadingSpinner";
 import { useState, useEffect } from "react";
-import { useNavigate, Navigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import {
-  CheckCircle2,
   ListTodo,
   Layers,
   Users,
   Settings,
-  LogOut,
-  Plus,
-  Trash2,
-  Edit3,
-  Star,
-  Calendar,
-  ArrowRight,
-  Search,
-  ChevronRight,
-  UserPlus,
-  X,
-  Sun,
-  Moon,
 } from "lucide-react";
 import { cn } from "../utils/cn";
 import { useMemo } from "react";
@@ -51,7 +36,8 @@ interface Task {
   created_at: string;
 }
 
-type TaskFilter = "all" | "pending" | "completed" | "important" | "critical";
+type TaskFilter = "all" | "pending" | "completed" | "critical";
+type StatusTypeFilter = "critical" | "high" | "medium" | "low";
 
 interface FifoItem {
   id: number;
@@ -411,7 +397,6 @@ export default function Dashboard() {
 
     if (filter === "pending") params.append("status", "pending");
     if (filter === "completed") params.append("status", "completed");
-    if (filter === "important") params.append("important", "true");
     if (filter === "critical") params.append("priority", "critical");
 
     const finalUrl = params.toString() ? `${url}?${params.toString()}` : url;
@@ -473,9 +458,9 @@ export default function Dashboard() {
   // FILTER + SEARCH (frontend)
   // =========================
 const filteredTasks = useMemo(() => {
-  let result = tasks;
+  let result = [...tasks]; // Kopia, aby nie mutować oryginału
 
-  // SEARCH
+  // 1. SEARCH
   if (taskSearch.trim() !== "") {
     const query = taskSearch.toLowerCase();
     result = result.filter(
@@ -485,27 +470,36 @@ const filteredTasks = useMemo(() => {
     );
   }
 
-  // FILTER
+  // 2. FILTER
   if (taskFilter !== "all") {
     result = result.filter((t) => {
       switch (taskFilter) {
-        case "pending":
-          return t.status === "pending";
-        case "completed":
-          return t.status === "completed";
-        case "important":
-          return t.is_important;
-        case "critical":
-          return t.priority === "critical"; // <-- upewnij się, że masz takie pole w taskach
-        default:
-          return true;
+        case "pending": return t.status === "pending";
+        case "completed": return t.status === "completed";
+        case "critical": return t.priority === "critical";
+        default: return true;
       }
     });
   }
 
+  // 3. SORTOWANIE (Twoja logika wagowa)
+  const priorityWeight = { critical: 4, high: 3, medium: 2, low: 1 };
+  
+  result.sort((a, b) => {
+    // Najpierw po priorytecie
+    const weightA = priorityWeight[a.priority] || 0;
+    const weightB = priorityWeight[b.priority] || 0;
+    
+    if (weightA !== weightB) {
+      return weightB - weightA; // Wyższy priorytet na górę
+    }
+    
+    // Opcjonalnie: Jeśli priorytety są równe, sortuj po dacie utworzenia
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+
   return result;
 }, [tasks, taskSearch, taskFilter]);
-
   // =========================
   // STATS (liczone w React)
   // =========================

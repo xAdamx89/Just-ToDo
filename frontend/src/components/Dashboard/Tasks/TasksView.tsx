@@ -94,44 +94,73 @@ return (
         </div>
 
         {/* Toolbar */}
-        <div className="flex-shrink-0 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
-          <div className="flex gap-2 flex-wrap">
-            {(["all", "pending", "completed", "critical"] as const).map((f) => (
-              <button
-                key={f}
-                onClick={() => setTaskFilter(f)}
-                className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-medium transition-all",
-                  taskFilter === f ? t.filterActive : t.filterInactive
-                )}
-              >
-                {f === "all" && "Wszystkie"}
-                {f === "pending" && "Do zrobienia"}
-                {f === "completed" && "Ukończone"}
-                {f === "critical" && "Krytyczne"}
-              </button>
-            ))}
-          </div>
-          <div className="flex gap-3 w-full md:w-auto">
-            <div className="relative flex-1 md:w-64">
-              <Search className={cn("absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4", t.textSecondary)} />
-              <input
-                type="text"
-                placeholder="Szukaj zadań..."
-                value={taskSearch}
-                onChange={(e) => setTaskSearch(e.target.value)}
-                className={cn("w-full pl-10 pr-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all", t.inputBg)}
-              />
+        <div className="flex-shrink-0 flex flex-col gap-4">
+          <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+            
+            {/* Kontener na przyciski filtrów */}
+            <div className="flex flex-col gap-2">
+              {/* Rząd 1: Statusy */}
+              <div className="flex gap-2 flex-wrap">
+                {(["all", "pending", "completed"] as const).map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setTaskFilter(f)}
+                    className={cn(
+                      "px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                      taskFilter === f ? t.filterActive : t.filterInactive
+                    )}
+                  >
+                    {f === "all" && "Wszystkie"}
+                    {f === "pending" && "Do zrobienia"}
+                    {f === "completed" && "Ukończone"}
+                  </button>
+                ))}
+              </div>
+
+              {/* Rząd 2: Priorytety */}
+              <div className="flex gap-2 flex-wrap">
+                {(["low", "medium", "high", "critical"] as const).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setTaskFilter(p)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border",
+                      taskFilter === p 
+                        ? "bg-amber-500 text-white border-amber-500 shadow-sm" 
+                        : cn(t.filterInactive, "border-transparent opacity-80 hover:opacity-100")
+                    )}
+                  >
+                    {p === "low" && "Niski"}
+                    {p === "medium" && "Średni"}
+                    {p === "high" && "Wysoki"}
+                    {p === "critical" && "Krytyczny 🔥"}
+                  </button>
+                ))}
+              </div>
             </div>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={openAddForm}
-              className={cn("px-4 py-2 rounded-xl font-medium flex items-center gap-2 transition-all", t.btnPrimary)}
-            >
-              <Plus className="w-4 h-4" />
-              <span className="hidden md:inline">Dodaj</span>
-            </motion.button>
+
+            {/* Wyszukiwarka i Dodawanie */}
+            <div className="flex gap-3 w-full md:w-auto self-end md:self-center">
+              <div className="relative flex-1 md:w-64">
+                <Search className={cn("absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4", t.textSecondary)} />
+                <input
+                  type="text"
+                  placeholder="Szukaj zadań..."
+                  value={taskSearch}
+                  onChange={(e) => setTaskSearch(e.target.value)}
+                  className={cn("w-full pl-10 pr-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all", t.inputBg)}
+                />
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={openAddForm}
+                className={cn("px-4 py-2 rounded-xl font-medium flex items-center gap-2 transition-all", t.btnPrimary)}
+              >
+                <Plus className="w-4 h-4" />
+                <span className="hidden md:inline">Dodaj</span>
+              </motion.button>
+            </div>
           </div>
         </div>
 
