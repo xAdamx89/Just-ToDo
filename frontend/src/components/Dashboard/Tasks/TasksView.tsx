@@ -17,6 +17,14 @@ interface Task {
   created_at: string;
 }
 
+const priorityLabels: Record<string, string> = {
+  all: "Wszystkie",
+  low: "Niski",
+  medium: "Średni",
+  high: "Wysoki",
+  critical: "Krytyczny"
+};
+
 
 interface TasksViewProps {
   loading: boolean;
@@ -125,17 +133,15 @@ return (
                 {(["all", "low", "medium", "high", "critical"] as const).map((p) => (
                 <button
                   key={p}
-                  // Zmieniono na setTaskFilter
                   onClick={() => setTaskFilter(prev => ({ ...prev, priority: p }))}
                   className={cn(
                     "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border",
-                    // Zmieniono na taskFilter.priority
-                    taskFilter.priority === p 
+                    taskFilter.priority === p
                       ? "bg-amber-500 text-white border-amber-500" 
                       : cn(t.filterInactive, "border-transparent")
                   )}
                 >
-                  {p.toUpperCase()}
+                  {priorityLabels[p]}
                 </button>
               ))}
               </div>
