@@ -3,6 +3,7 @@ import { Search, Plus, CheckCircle2, Star, Calendar, Edit3, Trash2, ListTodo } f
 import { cn } from "../../../utils/cn";
 import { LoadingSpinner } from "../../LoadingSpinner";
 import { TasksModal } from "./TasksModal";
+import { TaskFilterState } from "../../../pages/ProductiveDashboard";
 
 // Definicje typów (powinny być spójne z tymi w Dashboardzie)
 interface Task {
@@ -16,14 +17,15 @@ interface Task {
   created_at: string;
 }
 
+
 interface TasksViewProps {
   loading: boolean;
   stats: any;
   t: any;
   d: boolean;
-  taskFilter: string;
-  setTaskFilter: (f: any) => void;
   taskSearch: string;
+  taskFilter: TaskFilterState;
+  setTaskFilter: React.Dispatch<React.SetStateAction<TaskFilterState>>;
   setTaskSearch: (s: string) => void;
   filteredTasks: Task[];
   priorityConfig: any;
@@ -83,9 +85,9 @@ return (
               className={cn(
                 "p-4 rounded-2xl border cursor-pointer transition-all",
                 t.cardBg,
-                taskFilter === s.filter ? "ring-2 ring-amber-500" : ""
+                taskFilter.status === s.filter ? "ring-2 ring-amber-500" : ""
               )}
-              onClick={() => setTaskFilter(s.filter)}
+              onClick={() => setTaskFilter({ status: s.filter as any, priority: "all" })}
             >
               <p className={cn("text-sm mb-1", t.textSecondary)}>{s.label}</p>
               <p className={cn("text-2xl font-bold", s.color)}>{s.value}</p>
@@ -99,48 +101,47 @@ return (
             
             {/* Kontener na przyciski filtrów */}
             <div className="flex flex-col gap-2">
+
               {/* Rząd 1: Statusy */}
               <div className="flex gap-2 flex-wrap">
-                {(["all", "pending", "completed"] as const).map((f) => (
-                  <button
-                    key={f}
-                    onClick={() => setTaskFilter(f)}
-                    className={cn(
-                      "px-4 py-2 rounded-lg text-sm font-medium transition-all",
-                      taskFilter === f ? t.filterActive : t.filterInactive
-                    )}
-                  >
-                    {f === "all" && "Wszystkie"}
-                    {f === "pending" && "Do zrobienia"}
-                    {f === "completed" && "Ukończone"}
+              {(["all", "pending", "completed"] as const).map((s) => (
+                <button
+                  key={s}
+                  // Zmieniono na setTaskFilter
+                  onClick={() => setTaskFilter(prev => ({ ...prev, status: s }))}
+                  className={cn(
+                    "px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                    // Zmieniono na taskFilter.status
+                    taskFilter.status === s ? t.filterActive : t.filterInactive
+                  )}
+                >
+                    {s === "all" ? "Wszystkie" : s === "pending" ? "Do zrobienia" : "Ukończone"}
                   </button>
                 ))}
               </div>
 
               {/* Rząd 2: Priorytety */}
               <div className="flex gap-2 flex-wrap">
-                {(["low", "medium", "high", "critical"] as const).map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => setTaskFilter(p)}
-                    className={cn(
-                      "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border",
-                      taskFilter === p 
-                        ? "bg-amber-500 text-white border-amber-500 shadow-sm" 
-                        : cn(t.filterInactive, "border-transparent opacity-80 hover:opacity-100")
-                    )}
-                  >
-                    {p === "low" && "Niski"}
-                    {p === "medium" && "Średni"}
-                    {p === "high" && "Wysoki"}
-                    {p === "critical" && "Krytyczny"}
-                  </button>
-                ))}
+                {(["all", "low", "medium", "high", "critical"] as const).map((p) => (
+                <button
+                  key={p}
+                  // Zmieniono na setTaskFilter
+                  onClick={() => setTaskFilter(prev => ({ ...prev, priority: p }))}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border",
+                    // Zmieniono na taskFilter.priority
+                    taskFilter.priority === p 
+                      ? "bg-amber-500 text-white border-amber-500" 
+                      : cn(t.filterInactive, "border-transparent")
+                  )}
+                >
+                  {p.toUpperCase()}
+                </button>
+              ))}
               </div>
-            </div>
 
-            {/* Wyszukiwarka i Dodawanie */}
-            <div className="flex gap-3 w-full md:w-auto self-end md:self-center">
+              {/* Wyszukiwarka i Dodawanie */}
+              <div className="flex gap-3 w-full md:w-auto self-end md:self-center">
               <div className="relative flex-1 md:w-64">
                 <Search className={cn("absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4", t.textSecondary)} />
                 <input
@@ -160,6 +161,7 @@ return (
                 <Plus className="w-4 h-4" />
                 <span className="hidden md:inline">Dodaj</span>
               </motion.button>
+              </div>
             </div>
           </div>
         </div>

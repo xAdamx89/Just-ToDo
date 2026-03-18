@@ -36,7 +36,12 @@ interface Task {
   created_at: string;
 }
 
-type TaskFilter = "all" | "pending" | "completed" | "critical" | "high" | "medium" | "low";
+type TaskFilter =  "critical" | "high" | "medium" | "low";
+
+export interface TaskFilterState {
+  status: "all" | "pending" | "in_progres" | "completed" | "canceled";
+  priority: "all" | "low" | "medium" | "high" | "critical";
+}
 
 interface FifoItem {
   id: number;
@@ -290,7 +295,11 @@ export default function Dashboard() {
   const [sharedUsers, setSharedUsers] = useState<SharedUser[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [taskFilter, setTaskFilter] = useState<TaskFilter>("all");
+  //const [taskFilter, setTaskFilter] = useState<TaskFilter>("all");
+  const [taskFilter, setTaskFilter] = useState<TaskFilterState>({
+    status: "all",
+    priority: "all",
+  });
   const [taskSearch, setTaskSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
@@ -385,18 +394,25 @@ export default function Dashboard() {
       console.error(err);
     }
   };
+
   // =========================
   // FETCH TASKS
   // =========================
-  const fetchTasks = async (filter: TaskFilter = taskFilter) => {
+  const fetchTasks = async (currentFilters: TaskFilterState = taskFilter) => {
     setLoading(true);
 
-    let url = `${API_URL}/api/api/tasks/`;
+    const url = `${API_URL}/api/api/tasks/`;
     const params = new URLSearchParams();
 
-    if (filter === "pending") params.append("status", "pending");
-    if (filter === "completed") params.append("status", "completed");
-    if (filter === "critical") params.append("priority", "critical");
+    // 1. Dodajemy status do URL, jeśli nie jest "all"
+    if (currentFilters.status !== "all") {
+      params.append("status", currentFilters.status);
+    }
+
+    // 2. Dodajemy priorytet do URL, jeśli nie jest "all"
+    if (currentFilters.priority !== "all") {
+      params.append("priority", currentFilters.priority);
+    }
 
     const finalUrl = params.toString() ? `${url}?${params.toString()}` : url;
 
@@ -408,7 +424,6 @@ export default function Dashboard() {
       setTasks(data);
       
     } catch (err: any) {
-        // 3. Jeśli smartFetch rzuci błąd UNAUTHORIZED, przekierowujemy
       if (err.message === "UNAUTHORIZED") {
         navigate("/", { replace: true });
       } else {
@@ -457,9 +472,10 @@ export default function Dashboard() {
   // FILTER + SEARCH (frontend)
   // =========================
 const filteredTasks = useMemo(() => {
-  let result = [...tasks]; // Kopia, aby nie mutować oryginału
+  // 1. Kopiujemy tablicę na starcie
+  let result = [...tasks]; 
 
-  // 1. SEARCH
+  // 2. SEARCH (Wyszukiwanie tekstowe)
   if (taskSearch.trim() !== "") {
     const query = taskSearch.toLowerCase();
     result = result.filter(
@@ -469,31 +485,20 @@ const filteredTasks = useMemo(() => {
     );
   }
 
-  // 2. FILTER
-  if (taskFilter !== "all") {
-    result = result.filter((t) => {
-      switch (taskFilter) {
-        case "pending": 
-          return t.status === "pending";
-        case "completed": 
-          return t.status === "completed";
-        // Tutaj obsługujemy wszystkie priorytety jednym rzutem
-        case "low":
-        case "medium":
-        case "high":
-        case "critical":
-          return t.priority === taskFilter;
-        default: 
-          return true;
-      }
-    });
-  }
+  // 3. FILTROWANIE (Status + Priorytet)
+  result = result.filter(t => {
+    // Sprawdzamy status (jeśli "all", to ignorujemy ten filtr)
+    const matchesStatus = taskFilter.status === "all" || t.status === taskFilter.status;
+    // Sprawdzamy priorytet (jeśli "all", to ignorujemy ten filtr)
+    const matchesPriority = taskFilter.priority === "all" || t.priority === taskFilter.priority;
+    
+    return matchesStatus && matchesPriority;
+  });
 
-  // 3. SORTOWANIE (Twoja logika wagowa)
+  // 4. SORTOWANIE (Wewnątrz useMemo!)
   const priorityWeight = { critical: 4, high: 3, medium: 2, low: 1 };
   
   result.sort((a, b) => {
-    // Najpierw po priorytecie
     const weightA = priorityWeight[a.priority] || 0;
     const weightB = priorityWeight[b.priority] || 0;
     
@@ -501,12 +506,14 @@ const filteredTasks = useMemo(() => {
       return weightB - weightA; // Wyższy priorytet na górę
     }
     
-    // Opcjonalnie: Jeśli priorytety są równe, sortuj po dacie utworzenia
+    // Jeśli priorytety równe, sortuj po dacie (od najnowszych)
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 
+  // 5. Zwracamy gotową listę
   return result;
-}, [tasks, taskSearch, taskFilter]);
+
+}, [tasks, taskSearch, taskFilter]); // Tu zamykamy useMemo
   // =========================
   // STATS (liczone w React)
   // =========================
